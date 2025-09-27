@@ -51,7 +51,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -59,7 +59,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
+    if (!mounted) return
+
+    if (resolvedTheme === "dark") {
+      setTheme("light")
+    } else {
+      setTheme("dark")
+    }
   }
 
   return (
@@ -78,7 +84,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   alt="Matryofund"
                   width={20}
                   height={20}
-                  className="shrink-0 dark:hidden opacity-100"
+                  className="block shrink-0 dark:hidden opacity-100"
                   priority
                 />
                 <Image
@@ -99,29 +105,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleTheme}
-          className="w-full justify-start gap-2"
-        >
-          {!mounted ? (
-            <>
-              <IconMoon className="size-4" />
-              Dark Mode
-            </>
-          ) : theme === "dark" ? (
-            <>
-              <IconSun className="size-4" />
-              Light Mode
-            </>
-          ) : (
-            <>
-              <IconMoon className="size-4" />
-              Dark Mode
-            </>
-          )}
-        </Button>
+        <div className="flex items-center justify-between w-full p-2">
+          <span className="text-sm font-medium">Theme</span>
+          <button
+            onClick={toggleTheme}
+            className={`relative inline-flex h-8 w-16 items-center justify-between rounded-full px-2 transition-colors focus:outline-none ${
+              mounted && resolvedTheme === "dark" ? "bg-slate-800" : "bg-slate-200"
+            }`}
+            disabled={!mounted}
+          >
+            {/* Sun icon on the left */}
+            <IconSun className={`size-3 transition-colors ${
+              mounted && resolvedTheme === "light" ? "text-yellow-500" : "text-slate-400"
+            }`} />
+
+            {/* Moon icon on the right */}
+            <IconMoon className={`size-3 transition-colors ${
+              mounted && resolvedTheme === "dark" ? "text-slate-300" : "text-slate-400"
+            }`} />
+
+            {/* Toggle circle */}
+            <span
+              className={`absolute inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${
+                mounted && resolvedTheme === "dark" ? "translate-x-6" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
         <Button
           variant="ghost"
           size="sm"
