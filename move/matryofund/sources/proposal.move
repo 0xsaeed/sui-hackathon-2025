@@ -1,3 +1,4 @@
+#[allow(unused_use, unused_const)]
 module matryofund::proposal;
 
 use matryofund::config;
@@ -12,7 +13,7 @@ const EProposalOnVoting: u64 = 4;
 const EProposalDeadlineNotInFuture: u64 = 5;
 
 public struct Proposal has key {
-    id: u64,
+    id: UID,
     project_id: UID,
     proposer: address,
     description: String,
@@ -30,12 +31,12 @@ public fun create_proposal(
     clk: &Clock,
     // pledge_id: Option<UID>,
 ): Proposal {
-    let current_time: u64 = timestamp_ms(clock);
+    let current_time: u64 = timestamp_ms(clk);
     assert!(current_time < deadline, EProposalDeadlineNotInFuture);
     Proposal {
-        id: proposal_id,
+        id: object::new(ctx),
         project_id,
-        proposer: &ctx.sender(),
+        proposer: ctx.sender(),
         description: utf8(description),
         deadline,
         yes_votes: 0,
@@ -45,7 +46,7 @@ public fun create_proposal(
 }
 
 public fun execute_proposal(ctx: &mut TxContext, proposal: &mut Proposal, clk: &Clock) {
-    let current_time: u64 = timestamp_ms(clock);
+    let current_time: u64 = timestamp_ms(clk);
     assert!(proposal.executed, EProposalAlreadyExecuted);
     assert!(current_time <= proposal.deadline, EProposalOnVoting);
 
