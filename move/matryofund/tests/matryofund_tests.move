@@ -1,4 +1,4 @@
-#[allow(unused_use,duplicate_alias,unused_const,unused_variable)]
+#[allow(unused_use, duplicate_alias, unused_const, unused_variable, unused_let_mut)]
 #[test_only]
 module matryofund::matryofund_tests;
 
@@ -171,14 +171,13 @@ fun test_integration_full_crowdfunding_cycle() {
     let proposal_description = b"Proposal for project modification";
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000;
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-    transfer::share_object(proposal);
 
     // Users vote on the proposal
     ts::next_tx(&mut scenario, USER1);
