@@ -18,6 +18,25 @@ test:clear
 deploy:clear
 	sui client publish --gas-budget 200000000
 
+merge_dev:
+	git checkout move
+	git pull
+	git checkout dev
+	git merge move
+	git push
+	git checkout move
+
+merge_main:
+	git checkout move
+	git pull
+	git checkout dev
+	git merge move
+	git push
+	git checkout main
+	git merge dev
+	git push
+	git checkout move
+
 # Display help information
 help:
 	@echo "Available targets:"
