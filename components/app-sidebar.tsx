@@ -6,10 +6,12 @@ import {
   IconFileText,
   IconFolder,
   IconGridDots,
+  IconHome,
   IconMoon,
   IconSun,
 } from "@tabler/icons-react"
 import Image from "next/image"
+import Link from "next/link"
 import { NavMain } from '@/components/nav-main'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,6 +52,11 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
@@ -71,7 +78,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   alt="Matryofund"
                   width={20}
                   height={20}
-                  className="shrink-0 dark:hidden"
+                  className="shrink-0 dark:hidden opacity-100"
                   priority
                 />
                 <Image
@@ -79,7 +86,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   alt="Matryofund"
                   width={20}
                   height={20}
-                  className="shrink-0 hidden dark:block"
+                  className="shrink-0 hidden dark:block opacity-100"
                   priority
                 />
                 <span className="text-base font-semibold">Matryofund</span>
@@ -98,7 +105,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           onClick={toggleTheme}
           className="w-full justify-start gap-2"
         >
-          {theme === "dark" ? (
+          {!mounted ? (
+            <>
+              <IconMoon className="size-4" />
+              Dark Mode
+            </>
+          ) : theme === "dark" ? (
             <>
               <IconSun className="size-4" />
               Light Mode
@@ -109,6 +121,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               Dark Mode
             </>
           )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2"
+          asChild
+        >
+          <Link href="/">
+            <IconHome className="size-4" />
+            Back to Home
+          </Link>
         </Button>
       </SidebarFooter>
     </Sidebar>

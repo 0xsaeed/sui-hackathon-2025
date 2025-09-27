@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SuiProviders } from "@/components/providers/sui";
+import "@mysten/dapp-kit/dist/index.css";
+import { WalletCookieSync } from "@/components/wallet-cookie";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -23,14 +26,17 @@ export default function RootLayout({
         className={`${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <SuiProviders>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <WalletCookieSync />
+            {children}
+          </ThemeProvider>
+        </SuiProviders>
       </body>
     </html>
   );

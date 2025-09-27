@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GL } from "./gl";
+import { GL } from "./gl/index";
 import { Pill } from "./pill";
 import { ButtonHome } from "./ui/button-home";
 import { useState } from "react";
@@ -22,7 +22,7 @@ export function Hero() {
           Through perpetual investment strategies that outperform the market
         </p>
 
-        <Link className="contents max-sm:hidden" href="/#projects">
+        <Link className="contents max-sm:hidden" href="/projects">
           <ButtonHome
             className="mt-14"
             onMouseEnter={() => setHovering(true)}
@@ -31,7 +31,7 @@ export function Hero() {
             Browse Projects
           </ButtonHome>
         </Link>
-        <Link className="contents sm:hidden" href="/#projects">
+        <Link className="contents sm:hidden" href="/projects">
           <ButtonHome
             size="sm"
             className="mt-14"

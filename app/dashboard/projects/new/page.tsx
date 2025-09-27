@@ -1,0 +1,186 @@
+"use client"
+
+import { AppSidebar } from '@/components/app-sidebar'
+import { SiteHeader } from '@/components/site-header'
+import {
+  SidebarInset,
+  SidebarProvider,
+} from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+import React from 'react'
+
+const categories = ["DeFi", "NFTs", "Gaming", "Sustainability", "AI/ML", "Social"] as const
+const statuses = ["active", "live", "funded"] as const
+
+export default function NewProjectPage() {
+  const router = useRouter()
+  const [submitting, setSubmitting] = React.useState(false)
+  const [milestones, setMilestones] = React.useState<{ title: string; percent: number; endDate: string }[]>([])
+  const [mTitle, setMTitle] = React.useState("")
+  const [mPercent, setMPercent] = React.useState<number | "">("")
+  const [mDate, setMDate] = React.useState("")
+
+  function addMilestone() {
+    if (!mTitle || mPercent === "" || mPercent < 0 || mPercent > 100 || !mDate) return
+    setMilestones((arr) => [...arr, { title: mTitle, percent: Number(mPercent), endDate: mDate }])
+    setMTitle("")
+    setMPercent("")
+    setMDate("")
+  }
+
+  function handleSubmit(formData: FormData) {
+    setSubmitting(true)
+    const payload: Record<string, unknown> = Object.fromEntries(formData.entries())
+    payload["milestones"] = milestones
+    // In a real app this would POST to your API.
+    console.log('Create project payload', payload)
+    // Simulate success and navigate back to projects.
+    setTimeout(() => {
+      setSubmitting(false)
+      router.push('/dashboard/projects')
+    }, 600)
+  }
+
+  return (
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col p-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Project</CardTitle>
+              <CardDescription>Provide details for your fundraising project</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="name">Project Name</Label>
+                  <Input id="name" name="name" required placeholder="e.g. SUI DeFi Aggregator" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <select id="category" name="category" className="bg-transparent border rounded-md px-3 py-2">
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <select id="status" name="status" className="bg-transparent border rounded-md px-3 py-2">
+                    {statuses.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fundingGoal">Funding Goal (SUI)</Label>
+                  <Input id="fundingGoal" name="fundingGoal" type="number" min={0} step="1" required placeholder="15000" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timeLeft">Time Left</Label>
+                  <Input id="timeLeft" name="timeLeft" placeholder="e.g. 14 days" />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="description">Short Description</Label>
+                  <Textarea id="description" name="description" rows={3} placeholder="One‑line summary of your project" />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="longDescription">Long Description</Label>
+                  <Textarea id="longDescription" name="longDescription" rows={6} placeholder="Tell backers what you’re building, your roadmap, and how funds will be used." />
+                </div>
+
+                {/* Milestones */}
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Milestones</Label>
+                    <span className="text-xs text-foreground/60">Add one milestone at a time</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="mTitle">Title</Label>
+                      <Input id="mTitle" value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="e.g. Alpha launch" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mPercent">Relative Share %</Label>
+                      <Input id="mPercent" type="number" min={0} max={100} value={mPercent} onChange={(e) => setMPercent(e.target.value === '' ? '' : Number(e.target.value))} placeholder="0-100" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mDate">End date</Label>
+                      <Input id="mDate" type="date" value={mDate} onChange={(e) => setMDate(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <Button type="button" variant="secondary" onClick={addMilestone}>Add Milestone</Button>
+                  </div>
+
+                  {milestones.length > 0 && (
+                    <div className="mt-4 border rounded-md overflow-hidden">
+                      <div className="p-3 border-b text-sm text-foreground/60">Added milestones</div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b bg-muted/30">
+                              <th className="text-left p-3 text-sm font-medium text-foreground/80">Title</th>
+                              <th className="text-left p-3 text-sm font-medium text-foreground/80">Relative Share %</th>
+                              <th className="text-left p-3 text-sm font-medium text-foreground/80">End Date</th>
+                              <th className="text-right p-3 text-sm font-medium text-foreground/80">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {milestones.map((m, idx) => (
+                              <tr key={idx} className="border-b last:border-b-0 hover:bg-muted/20">
+                                <td className="p-3 text-sm font-medium">{m.title}</td>
+                                <td className="p-3 text-sm text-foreground/80">{m.percent}%</td>
+                                <td className="p-3 text-sm text-foreground/80">{new Date(m.endDate).toLocaleDateString()}</td>
+                                <td className="p-3 text-right">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setMilestones(milestones.filter((_, i) => i !== idx))}
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    Remove
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="md:col-span-2 flex gap-3 justify-end">
+                  <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                  <Button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create Project'}</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}
