@@ -22,6 +22,7 @@ merge_dev:
 	git checkout move
 	git pull
 	git checkout dev
+	git pull
 	git merge move
 	git push
 	git checkout move
@@ -30,9 +31,11 @@ merge_main:
 	git checkout move
 	git pull
 	git checkout dev
+	git pull
 	git merge move
 	git push
 	git checkout main
+	git pull
 	git merge dev
 	git push
 	git checkout move
