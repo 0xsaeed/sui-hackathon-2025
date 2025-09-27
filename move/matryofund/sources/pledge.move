@@ -8,7 +8,7 @@ public struct Pledge has key {
     amount: u64,
 }
 
-public(package) mint_pledge(ctx: &mut TxContext, project_id: UID, coin: SUI): Pledge {
+public(package) fun create_pledge(ctx: &mut TxContext, project_id: UID, coin: SUI): Pledge {
     let pledge = Pledge {
         id: UID::new(ctx),
         project_id,
@@ -18,6 +18,6 @@ public(package) mint_pledge(ctx: &mut TxContext, project_id: UID, coin: SUI): Pl
     // todo: emit event
 }
 
-public fun refund_pledge(pledge: Pledge): u64 {
+public fun refund_pledge(pledge: Pledge) {
     pledge.amount
 }
