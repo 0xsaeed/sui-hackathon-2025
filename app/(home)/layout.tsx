@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "../home.css";
 import { Header } from "@/components/header";
+import { RedirectOnConnect } from "@/components/redirect-on-connect";
 
 export const metadata: Metadata = {
   title: "Matryofund",
@@ -14,6 +15,7 @@ export default function HomeLayout({
 }>) {
   return (
     <div className="home-scope">
+      <RedirectOnConnect />
       <Header />
       {children}
     </div>

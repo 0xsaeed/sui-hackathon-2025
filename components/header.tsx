@@ -20,7 +20,7 @@ export const Header = () => {
               className="w-10 h-10 md:w-12 md:h-12"
               priority
             />
-            <span className="font-semibold text-xl md:text-2xl">Matryofund</span>
+            <span className="font-sentient text-xl md:text-2xl"><i>Matryofund</i></span>
           </span>
         </Link>
         <nav className="flex max-lg:hidden absolute left-1/2 -translate-x-1/2 items-center justify-center gap-x-10">
