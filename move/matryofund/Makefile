@@ -1,5 +1,9 @@
 .PHONY: build test deploy help
 
+ssh:
+	eval $$(ssh-agent)
+	ssh-add
+
 clear:
 	clear
 # Build the Move project
