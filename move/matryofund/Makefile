@@ -1,15 +1,17 @@
 .PHONY: build test deploy help
 
+clear:
+	clear
 # Build the Move project
-build:
+build:clear
 	sui move build
 
 # Run Move tests
-test:
+test:clear
 	sui move test
 
 # Deploy the Move package to the Sui network
-deploy:
+deploy:clear
 	sui client publish --gas-budget 200000000
 
 # Display help information
