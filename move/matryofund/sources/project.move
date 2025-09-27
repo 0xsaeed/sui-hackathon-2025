@@ -1,8 +1,8 @@
+#[allow(unused_field, unused_variable)]
 module matryofund::project;
 
 use std::string::String;
 use sui::clock::Clock;
-use sui::event;
 
 public struct Project has key {
     id: UID,

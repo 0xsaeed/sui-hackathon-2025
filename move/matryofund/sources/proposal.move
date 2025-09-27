@@ -1,4 +1,4 @@
-#[allow(unused_use, unused_const)]
+#[allow(unused_use, unused_const, unused_variable)]
 module matryofund::proposal;
 
 use matryofund::config;
