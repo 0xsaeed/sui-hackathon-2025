@@ -120,7 +120,10 @@ fun test_create_proposal_deadline_in_past() {
     // Try to create proposal with deadline in the past
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Invalid proposal";
-    let proposal_deadline = now - 1000; // Past deadline
+    // Set deadline to 0 (definitely in the past) or advance clock after setting deadline
+    let proposal_deadline = now + 1000; // Set a future deadline first
+    // Then advance the clock past the deadline
+    clock::increment_for_testing(&mut clock, 2000);
 
     proposal::create_and_share_proposal(
         ctx,
