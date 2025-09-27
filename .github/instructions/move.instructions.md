@@ -1,5 +1,5 @@
 ---
-description: 'Next.js + Tailwind development standards and instructions'
+description: 'move sui instructions for GitHub Copilot'
 applyTo: '**/*.move, **/Move.toml'
 ---
 

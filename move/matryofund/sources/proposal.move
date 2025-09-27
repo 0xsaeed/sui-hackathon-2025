@@ -48,6 +48,18 @@ public fun create_proposal(
     // todo change project status to voting
 }
 
+#[test_only]
+public fun create_and_share_proposal(
+    ctx: &mut TxContext,
+    project_id: ID,
+    description: vector<u8>,
+    deadline: u64,
+    clk: &Clock,
+) {
+    let proposal = create_proposal(ctx, project_id, description, deadline, clk);
+    transfer::share_object(proposal);
+}
+
 public fun execute_proposal(ctx: &mut TxContext, proposal: &mut Proposal, clk: &Clock) {
     let current_time: u64 = timestamp_ms(clk);
     assert!(proposal.executed, EProposalAlreadyExecuted);

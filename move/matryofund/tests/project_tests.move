@@ -1,4 +1,4 @@
-#[allow(unused_use,duplicate_alias,unused_const,unused_variable)]
+#[allow(unused_use,duplicate_alias,unused_const,unused_variable,unused_let_mut)]
 #[test_only]
 module matryofund::project_tests;
 

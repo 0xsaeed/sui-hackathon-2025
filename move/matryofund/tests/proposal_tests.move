@@ -1,4 +1,4 @@
-#[allow(unused_use,duplicate_alias,unused_const,unused_variable)]
+#[allow(unused_use, duplicate_alias, unused_const, unused_variable, unused_let_mut)]
 #[test_only]
 module matryofund::proposal_tests;
 
@@ -65,16 +65,13 @@ fun test_create_proposal_success() {
     let proposal_description = b"Proposal to change project direction";
     let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000; // 2 days from now
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-
-    // Transfer proposal to make it accessible in next transaction
-    transfer::share_object(proposal);
 
     ts::return_shared(project);
     clock::destroy_for_testing(clock);
@@ -125,15 +122,13 @@ fun test_create_proposal_deadline_in_past() {
     let proposal_description = b"Invalid proposal";
     let proposal_deadline = now - 1000; // Past deadline
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-
-    transfer::share_object(proposal);
     ts::return_shared(project);
     clock::destroy_for_testing(clock);
     ts::end(scenario);
@@ -188,14 +183,13 @@ fun test_vote_on_proposal_success() {
     let proposal_description = b"Proposal to change project direction";
     let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-    transfer::share_object(proposal);
 
     // User1 votes on the proposal using their pledge
     ts::next_tx(&mut scenario, USER1);
@@ -268,14 +262,13 @@ fun test_vote_on_expired_proposal() {
     let proposal_description = b"Proposal to change project direction";
     let proposal_deadline = now + 1000; // Very short deadline
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-    transfer::share_object(proposal);
 
     // Advance clock past proposal deadline
     clock::increment_for_testing(&mut clock, 2000);
@@ -352,14 +345,13 @@ fun test_vote_twice_same_pledge() {
     let proposal_description = b"Proposal to change project direction";
     let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-    transfer::share_object(proposal);
 
     // User1 votes first time
     ts::next_tx(&mut scenario, USER1);
@@ -447,14 +439,13 @@ fun test_multiple_users_voting() {
     let proposal_description = b"Proposal to change project direction";
     let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-    transfer::share_object(proposal);
 
     // User1 votes YES
     ts::next_tx(&mut scenario, USER1);
@@ -538,14 +529,13 @@ fun test_execute_proposal_wrong_conditions() {
     let proposal_description = b"Proposal to execute";
     let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
 
-    let proposal = proposal::create_proposal(
+    proposal::create_and_share_proposal(
         ctx,
         project_id,
         proposal_description,
         proposal_deadline,
         &clock,
     );
-    transfer::share_object(proposal);
     ts::return_shared(project);
 
     // Try to execute proposal - should fail due to assertion in execute_proposal
