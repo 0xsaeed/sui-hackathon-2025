@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import "../dashboard.css";
+import { RedirectOnDisconnect } from "@/components/redirect-on-disconnect";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -19,7 +20,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className={`${geistMono.variable} antialiased`}>
+    <div className={`dashboard-scope ${geistMono.variable} antialiased`}>
+      <RedirectOnDisconnect />
       {children}
     </div>
   );
