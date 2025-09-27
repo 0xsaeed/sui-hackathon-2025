@@ -1,5 +1,4 @@
 #[allow(unused_use)]
-/// Module: matryofund
 module matryofund::matryofund;
 
 use matryofund::pledge::{Pledge, create_pledge};
@@ -20,6 +19,6 @@ fun init(ctx: &mut TxContext) {
     )
 }
 
-public fun deposit_funds(ctx: &mut TxContext, project_id: UID, coin: Coin<SUI>): Pledge {
-    create_pledge(ctx, project_id, coin)
+public fun deposit_funds(ctx: &mut TxContext, project_id: UID, payment: Coin<SUI>): Pledge {
+    create_pledge(project_id, payment, ctx)
 }
