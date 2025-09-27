@@ -23,6 +23,7 @@ public struct Milestone has key, store {
     id: UID,
     title: String,
     deadline: u64,
+    claimed_status: bool,
     release_percentage: u8,
 }
 
