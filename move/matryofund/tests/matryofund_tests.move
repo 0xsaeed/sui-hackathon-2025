@@ -1,3 +1,4 @@
+#[allow(unused_use)]
 #[test_only]
 module matryofund::matryofund_tests;
 
