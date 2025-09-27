@@ -8,16 +8,13 @@ public struct Pledge has key {
     amount: u64,
 }
 
-public fun mint_pledge(ctx: &mut TxContext, project_id: UID, coin: SUI): Pledge {
+public(package) mint_pledge(ctx: &mut TxContext, project_id: UID, coin: SUI): Pledge {
     let pledge = Pledge {
         id: UID::new(ctx),
         project_id,
         amount: coin.value(),
     };
     pledge
-    // todo: store the coin in a vault or escrow
-    // todo: check that project_id exists
-    // todo: check project status
     // todo: emit event
 }
 
