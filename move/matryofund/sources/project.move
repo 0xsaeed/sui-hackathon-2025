@@ -11,11 +11,18 @@ module matryofund::project{
         min_funding: u64,          // in MIST
         deadline: u64,             // ms timestamp = now + duration_ms
         hardcap: u64,              // in MIST
-        milestones: vector<u8>,    // must sum to 100
+        milestones: vector<Milestone>,    // must sum to 100
         creator: address,
         raised: u64,               // total contributed (MIST)
         milestone_index: u8,         // next milestone to open/finalize
         status: u8,              // false when canceled or fully completed
+    }
+
+    public struct Milestone has key, store {
+        id: UID,
+        title: String,
+        deadline: u64,
+        release_percentage: u8,
     }
 
     /// Create a new project and SHARE it.
@@ -26,7 +33,7 @@ module matryofund::project{
         min_funding: u64,
         duration_ms: u64,
         hardcap: u64,
-        milestones: vector<u8>,
+        milestones: vector<Milestone>,
         clk: &Clock,
         ctx: &mut TxContext
     ) {
@@ -43,8 +50,8 @@ module matryofund::project{
             milestones,
             creator: sui::tx_context::sender(ctx),
             raised: 0,
-            current_index: 0,
-            active: 1,
+            milestone_index: 0,
+            status: 1,
         };
 
         // Share the project object
