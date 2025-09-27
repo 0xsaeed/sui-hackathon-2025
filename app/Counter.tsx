@@ -9,7 +9,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useNetworkVariable } from "./networkConfig";
+import { useNetworkVariable } from "../lib/networkConfig";
 import { useState } from "react";
 import ClipLoader from "react-spinners/ClipLoader";
 
