@@ -1,5 +1,13 @@
+"use client";
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
 
 export default function Home() {
+    const currentAccount = useCurrentAccount();
+
   return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
