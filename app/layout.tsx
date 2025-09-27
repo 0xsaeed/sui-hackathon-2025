@@ -1,6 +1,6 @@
 import "@mysten/dapp-kit/dist/index.css";
 import "./globals.css";
-import { Providers } from "@/components/providers/providers";
+import { SuiProviders } from "@/components/providers/sui";
 import Navbar from "@/components/layout/Navbar";
 
 export default function RootLayout({
@@ -17,12 +17,12 @@ export default function RootLayout({
         <title>Sui dApp Starter</title>
       </head>
       <body>
-        <Providers>
+        <SuiProviders>
           <Navbar />
           <div className="bg-slate-50 min-h-screen">
             {children}
           </div>
-        </Providers>
+        </SuiProviders>
       </body>
     </html>
   );

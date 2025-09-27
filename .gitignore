@@ -110,3 +110,6 @@ temp/
 
 # Turbo
 .turbo
+
+# seedphrases
+*.seed
