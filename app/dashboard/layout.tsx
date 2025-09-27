@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
+import "../dashboard.css";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -7,23 +8,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Matryofund",
-  description: "Sui Hackathon 2025",
+  title: "Dashboard",
+  description: "Dashboard for analytics and management",
+  generator: 'v0.app'
 };
 
-export default function RootLayout({
+export default function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistMono.variable} antialiased`}
-        suppressHydrationWarning
-      >
-        {children}
-      </body>
-    </html>
+    <div className={`${geistMono.variable} antialiased`}>
+      {children}
+    </div>
   );
 }
