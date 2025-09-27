@@ -124,6 +124,11 @@ body {
   --border: hsl(240 3.7% 15.9%);
   --input: hsl(240 3.7% 15.9%);
   --ring: hsl(217.2 91.2% 59.8%);
+  --chart-1: hsl(220 70% 70%);
+  --chart-2: hsl(160 60% 60%);
+  --chart-3: hsl(50 90% 65%);
+  --chart-4: hsl(280 65% 70%);
+  --chart-5: hsl(20 70% 70%);
   --sidebar: hsl(240 5.9% 10%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);
   --sidebar-primary: hsl(224.3 76.3% 48%);

@@ -6,14 +6,12 @@ import {
   IconFileText,
   IconFolder,
   IconGridDots,
-  IconHelp,
   IconInnerShadowTop,
-  IconSearch,
-  IconSettings,
+  IconMoon,
+  IconSun,
 } from "@tabler/icons-react"
 import { NavMain } from '@/components/nav-main'
-import { NavSecondary } from '@/components/nav-secondary'
-import { NavUser } from '@/components/nav-user'
+import { Button } from '@/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -23,19 +21,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { useTheme } from "next-themes"
 
 const data = {
-  user: {
-    name: "Alex Robertson",
-    email: "alex.robertson@gmail.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "My Dashboard",
       url: "/dashboard",
       icon: IconDashboard,
-      isActive: true,
     },
     {
       title: "My Pledges",
@@ -53,26 +46,15 @@ const data = {
       icon: IconFileText,
     },
   ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { theme, setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -92,10 +74,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleTheme}
+          className="w-full justify-start gap-2"
+        >
+          {theme === "dark" ? (
+            <>
+              <IconSun className="size-4" />
+              Light Mode
+            </>
+          ) : (
+            <>
+              <IconMoon className="size-4" />
+              Dark Mode
+            </>
+          )}
+        </Button>
       </SidebarFooter>
     </Sidebar>
   )
