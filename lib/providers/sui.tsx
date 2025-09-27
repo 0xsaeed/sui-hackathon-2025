@@ -2,7 +2,7 @@
 
 import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { networkConfig } from "../lib/networkConfig";
+import { networkConfig } from "@/lib/networkConfig";
 import { useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
