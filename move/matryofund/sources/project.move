@@ -59,3 +59,19 @@ public fun create_project(
     // Share the project object
     transfer::share_object(project);
 }
+
+/// Create a new milestone object
+public fun new_milestone(
+    title: String,
+    deadline: u64,
+    release_percentage: u8,
+    ctx: &mut TxContext,
+): Milestone {
+    Milestone {
+        id: object::new(ctx),
+        title,
+        deadline,
+        claimed_status: false,
+        release_percentage,
+    }
+}
