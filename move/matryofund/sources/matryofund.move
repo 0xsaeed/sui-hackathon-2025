@@ -1,7 +1,8 @@
 #[allow(unused_use)]
 module matryofund::matryofund;
 
-use matryofund::pledge::{Pledge, create_pledge};
+use matryofund::pledge::{Pledge};
+use matryofund::project::Project;
 use sui::coin::Coin;
 use sui::sui::SUI;
 
@@ -17,8 +18,4 @@ fun init(ctx: &mut TxContext) {
         AdminCap { id: object::new(ctx) },
         ctx.sender(),
     )
-}
-
-public fun deposit_funds(ctx: &mut TxContext, project_id: UID, payment: Coin<SUI>): Pledge {
-    create_pledge(project_id, payment, ctx)
 }
