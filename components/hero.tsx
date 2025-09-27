@@ -22,23 +22,23 @@ export function Hero() {
           Through perpetual investment strategies that outperform the market
         </p>
 
-        <Link className="contents max-sm:hidden" href="/#contact">
+        <Link className="contents max-sm:hidden" href="/#projects">
           <ButtonHome
             className="mt-14"
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
           >
-            [Contact Us]
+            Browse Projects
           </ButtonHome>
         </Link>
-        <Link className="contents sm:hidden" href="/#contact">
+        <Link className="contents sm:hidden" href="/#projects">
           <ButtonHome
             size="sm"
             className="mt-14"
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
           >
-            [Contact Us]
+            Browse Projects
           </ButtonHome>
         </Link>
       </div>

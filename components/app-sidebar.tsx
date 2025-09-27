@@ -6,10 +6,10 @@ import {
   IconFileText,
   IconFolder,
   IconGridDots,
-  IconInnerShadowTop,
   IconMoon,
   IconSun,
 } from "@tabler/icons-react"
+import Image from "next/image"
 import { NavMain } from '@/components/nav-main'
 import { Button } from '@/components/ui/button'
 import {
@@ -64,8 +64,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="/dashboard">
-                <IconInnerShadowTop className="!size-5" />
+              <a href="/dashboard" className="flex items-center gap-2">
+                {/* Small logo to the left of wordmark */}
+                <Image
+                  src="/applogo-black.svg"
+                  alt="Matryofund"
+                  width={20}
+                  height={20}
+                  className="shrink-0 dark:hidden"
+                  priority
+                />
+                <Image
+                  src="/applogo-white.svg"
+                  alt="Matryofund"
+                  width={20}
+                  height={20}
+                  className="shrink-0 hidden dark:block"
+                  priority
+                />
                 <span className="text-base font-semibold">Matryofund</span>
               </a>
             </SidebarMenuButton>
