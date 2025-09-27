@@ -4,13 +4,15 @@ module matryofund::project;
 use matryofund::config;
 use std::string::String;
 use sui::clock::Clock;
+use sui::url::Url;
 
 public struct Project has key {
     id: UID,
     creator: address,
     title: String,
     description: String,
-    link: String, // todo url
+    image_url: Url,
+    link: Url,
     funding_start: u64,
     funding_deadline: u64,
     funding_goal: u128,
@@ -33,7 +35,8 @@ public struct Milestone has store {
 public fun create_project(
     title: String,
     description: String,
-    link: String,
+    image_url: Url,
+    link: Url,
     funding_deadline: u64,
     funding_goal: u128,
     close_on_funding_goal: bool,
@@ -66,6 +69,7 @@ public fun create_project(
         creator: tx_context::sender(ctx),
         title,
         description,
+        image_url,
         link,
         funding_start: now,
         funding_deadline,
@@ -108,3 +112,10 @@ public fun finish_funding(project: &mut Project, clk: &Clock) {
         project.status = config::status_failed();
     }
 }
+
+
+
+public fun get_id(project: &Project): ID { object::id(project) }
+public fun title(project: &Project): String { project.title }
+public fun description(project: &Project): String { project.description }
+public fun image_url(project: &Project): Url { project.image_url }
