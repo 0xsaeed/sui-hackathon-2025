@@ -19,8 +19,7 @@ public struct Project has key {
     status: u8, // false when canceled or fully completed
 }
 
-public struct Milestone has key, store {
-    id: UID,
+public struct Milestone has store {
     title: String,
     deadline: u64,
     claimed_status: bool,
@@ -35,12 +34,29 @@ public fun create_project(
     min_funding: u64,
     duration_ms: u64,
     hardcap: u64,
-    milestones: vector<Milestone>,
+    milestone_titles: vector<vector<u8>>,
+    milestone_deadlines: vector<u64>,
+    milestone_percents: vector<u8>,
     clk: &Clock,
     ctx: &mut TxContext,
 ) {
     let now = sui::clock::timestamp_ms(clk);
     let deadline = now + duration_ms;
+    // --- build all milestones inside this tx ---
+    let mut milestones = vector::empty<Milestone>();
+    let n = vector::length(&milestone_titles);
+    let mut i = 0;
+    while (i < n) {
+        let ms = Milestone {
+            title: std::string::utf8(milestone_titles[i]),
+            deadline: milestone_deadlines[i],
+            claimed_status: false,
+            release_percentage: milestone_percents[i],
+        };
+        vector::push_back(&mut milestones, ms);
+        i = i + 1;
+    };
+
     let project = Project {
         id: sui::object::new(ctx),
         title,
@@ -68,7 +84,6 @@ public fun new_milestone(
     ctx: &mut TxContext,
 ): Milestone {
     Milestone {
-        id: object::new(ctx),
         title,
         deadline,
         claimed_status: false,
