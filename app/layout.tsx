@@ -1,28 +1,36 @@
-import "@mysten/dapp-kit/dist/index.css";
-import "./globals.css";
-import { SuiProviders } from "@/components/providers/sui";
-import Navbar from "@/components/layout/Navbar";
+import type { Metadata } from "next";
+import { Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Matryofund",
+  description: "Sui Hackathon 2025",
+};
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <meta charSet="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sui dApp Starter</title>
-      </head>
-      <body>
-        <SuiProviders>
-          <Navbar />
-          <div className="bg-slate-50 min-h-screen">
-            {children}
-          </div>
-        </SuiProviders>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistMono.variable} antialiased`}
+        suppressHydrationWarning
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
