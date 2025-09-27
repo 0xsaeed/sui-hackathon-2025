@@ -1,6 +1,6 @@
 import "@mysten/dapp-kit/dist/index.css";
 import "@/app/globals.css";
-import { Providers } from "../lib/providers/sui";
+import { Providers } from "../components/providers/sui";
 import Navbar from "@/components/Navbar";
 
 export default function RootLayout({
