@@ -1,8 +1,7 @@
 #[allow(unused_use)]
 module matryofund::matryofund;
 
-use matryofund::pledge::{Pledge};
-use matryofund::project::Project;
+use matryofund::project::{Project, Pledge};
 use sui::coin::Coin;
 use sui::sui::SUI;
 

@@ -2,7 +2,7 @@
 module matryofund::proposal;
 
 use matryofund::config;
-use matryofund::pledge::Pledge;
+use matryofund::project::Pledge;
 use std::string::{String, utf8};
 use sui::clock::{Clock, timestamp_ms};
 

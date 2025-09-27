@@ -1,10 +1,14 @@
-#[allow(unused_field, unused_variable)]
+#[allow(unused_field, unused_variable, unused_use, lint(self_transfer))]
 module matryofund::project;
 
 use matryofund::config;
 use std::string::String;
+use sui::balance::{Self, Balance};
 use sui::clock::Clock;
-use sui::url::Url;
+use sui::coin::Coin;
+use sui::event;
+use sui::sui::SUI;
+use sui::url::{Self, Url};
 
 public struct Project has key {
     id: UID,
@@ -22,6 +26,7 @@ public struct Project has key {
     milestones: vector<Milestone>, // must sum to 100
     milestone_index: u8, // next milestone to open/finalize
     status: u8, // false when canceled or fully completed
+    vault: Balance<SUI>, // escrow storage
 }
 
 public struct Milestone has store {
@@ -30,6 +35,17 @@ public struct Milestone has store {
     is_claimed: bool,
     release_percentage: u8,
 }
+
+public struct Pledge has key, store {
+    id: UID,
+    project_id: ID,
+    amount: u64,
+    name: String,
+    description: String,
+    image_url: Url,
+}
+
+// ########################################################### Public Functions ##################################
 
 /// Create a new project and SHARE it.
 public fun create_project(
@@ -80,6 +96,7 @@ public fun create_project(
         milestones,
         milestone_index: 0u8,
         status: config::status_funding(),
+        vault: balance::zero<SUI>(),
     };
 
     // Share the project object
@@ -113,9 +130,34 @@ public fun finish_funding(project: &mut Project, clk: &Clock) {
     }
 }
 
+public fun deposit_funds(project: &mut Project, payment: Coin<SUI>, ctx: &mut TxContext) {
+    let amount = payment.value();
+    project.vault.join(payment.into_balance());
+    project.total_raised = project.total_raised + (amount as u128);
 
+    let pledge = Pledge {
+        id: object::new(ctx),
+        project_id: get_id(project),
+        amount,
+        name: project.title,
+        description: project.description,
+        image_url: project.image_url,
+    };
+    // send pledge NFT to backer
+    transfer::public_transfer(pledge, ctx.sender());
+}
 
+public fun refund(pledge: &Pledge): () {}
+
+public fun transfer_pledge(pledge: Pledge, recipient: address) {
+    transfer::public_transfer(pledge, recipient);
+}
+
+// ########################################################### View Functions ##################################
 public fun get_id(project: &Project): ID { object::id(project) }
-public fun title(project: &Project): String { project.title }
-public fun description(project: &Project): String { project.description }
-public fun image_url(project: &Project): Url { project.image_url }
+
+public fun get_title(project: &Project): String { project.title }
+
+public fun get_description(project: &Project): String { project.description }
+
+public fun get_image_url(project: &Project): Url { project.image_url }
