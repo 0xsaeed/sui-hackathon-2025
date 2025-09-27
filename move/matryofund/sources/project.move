@@ -1,4 +1,4 @@
-#[allow(unused_field, unused_variable, unused_use, lint(self_transfer))]
+#[allow(unused_field, unused_variable, unused_use, unused_const, lint(self_transfer))]
 module matryofund::project;
 
 use matryofund::config;
@@ -9,6 +9,20 @@ use sui::coin::Coin;
 use sui::event;
 use sui::sui::SUI;
 use sui::url::{Self, Url};
+
+//  constants
+const EOnlyCreator: u64 = 1;
+const EOnlyAdmin: u64 = 2;
+const EProjectNotActive: u64 = 3;
+const EFundingNotEnded: u64 = 4;
+const EFundingAlreadyEnded: u64 = 5;
+const EFundingDeadlineNotPassed: u64 = 6;
+const EInsufficientFunds: u64 = 7;
+const ENoMoreMilestones: u64 = 8;
+const EMilestoneAlreadyClaimed: u64 = 9;
+const EMilestoneDeadlineNotReached: u64 = 10;
+const EMilestoneInvalidPercentage: u64 = 11;
+const EMilestoneInvalidData: u64 = 12;
 
 public struct Project has key {
     id: UID,
@@ -66,19 +80,26 @@ public fun create_project(
     let mut milestones: vector<Milestone> = vector[];
     let n = vector::length(&milestone_titles);
     assert!(n > 0, 1);
-    assert!(n == vector::length(&milestone_deadlines), 2);
-    assert!(n == vector::length(&milestone_percents), 3);
+    assert!(n == vector::length(&milestone_deadlines), EMilestoneInvalidData);
+    assert!(n == vector::length(&milestone_percents), EMilestoneInvalidData);
+    assert!(n < 100, ENoMoreMilestones);
     let mut i = 0;
+    let mut total_percentage = 0;
+    let mut last_deadline = now;
     while (i < n) {
+        assert!(milestone_deadlines[i] > last_deadline, EMilestoneInvalidData);
+        last_deadline = milestone_deadlines[i];
         let ms = Milestone {
             title: milestone_titles[i],
             deadline: milestone_deadlines[i],
             is_claimed: false,
             release_percentage: milestone_percents[i],
         };
+        total_percentage = total_percentage + milestone_percents[i];
         vector::push_back(&mut milestones, ms);
         i = i + 1;
     };
+    assert!(total_percentage == 100, EMilestoneInvalidPercentage);
 
     let project = Project {
         id: sui::object::new(ctx),
@@ -103,24 +124,29 @@ public fun create_project(
     transfer::share_object(project);
 }
 
-/// Create a new milestone object
-public fun new_milestone(
-    title: String,
-    deadline: u64,
-    release_percentage: u8,
-    ctx: &mut TxContext,
-): Milestone {
-    Milestone {
-        title,
-        deadline,
-        is_claimed: false,
-        release_percentage,
-    }
-}
+// fun new_milestone(
+//     title: String,
+//     deadline: u64,
+//     release_percentage: u8,
+//     ctx: &mut TxContext,
+// ): Milestone {
+//     assert!(release_percentage > 0 && release_percentage <= 100, EMilestoneInvalidPercentage);
+//     Milestone {
+//         title,
+//         deadline,
+//         is_claimed: false,
+//         release_percentage,
+//     }
+// }
 
 public fun finish_funding(project: &mut Project, clk: &Clock) {
     let now = sui::clock::timestamp_ms(clk);
-    assert!(now >= project.funding_deadline, 0);
+    if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
+        // Successful funding
+        project.status = config::status_active();
+        ()
+    };
+    assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
     if (project.total_raised >= project.funding_goal) {
         // Successful funding
         project.status = 2; // active
@@ -130,7 +156,15 @@ public fun finish_funding(project: &mut Project, clk: &Clock) {
     }
 }
 
-public fun deposit_funds(project: &mut Project, payment: Coin<SUI>, ctx: &mut TxContext) {
+public fun deposit_funds(
+    project: &mut Project,
+    payment: Coin<SUI>,
+    ctx: &mut TxContext,
+    clk: &Clock,
+) {
+    assert!(project.status == config::status_funding(), EProjectNotActive);
+    let now = sui::clock::timestamp_ms(clk);
+    assert!(now < project.funding_deadline, EFundingAlreadyEnded);
     let amount = payment.value();
     project.vault.join(payment.into_balance());
     project.total_raised = project.total_raised + (amount as u128);
@@ -153,7 +187,7 @@ public fun transfer_pledge(pledge: Pledge, recipient: address) {
     transfer::public_transfer(pledge, recipient);
 }
 
-// ########################################################### View Functions ##################################
+// ######################################## View Functions ##################################
 public fun get_id(project: &Project): ID { object::id(project) }
 
 public fun get_title(project: &Project): String { project.title }
