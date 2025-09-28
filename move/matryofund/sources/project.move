@@ -250,7 +250,7 @@ public fun finish_funding(project: &mut Project, clk: &Clock) {
             change_project_status(project, config::status_active());
         };
     };
-    
+
     let event = ProjectStatusChangedEvent {
         project_id: get_id(project),
         new_status: project.status,
@@ -360,6 +360,14 @@ public fun get_description(project: &Project): String { project.description }
 public fun get_image_url(project: &Project): Url { project.image_url }
 
 public fun get_status(project: &Project): u8 { project.status }
+
+public fun get_pledge_project_id(pledge: &Pledge): ID {
+    pledge.project_id
+}
+
+public fun get_pledge_amount(pledge: &Pledge): u64 {
+    pledge.amount
+}
 
 // ######################################## package Functions ##################################
 
