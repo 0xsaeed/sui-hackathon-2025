@@ -5,11 +5,9 @@ export type Milestone = {
 }
 
 export type Project = {
-  id: number
+  id: string | number
   name: string
   description: string
-  longDescription?: string
-  category: "DeFi" | "NFTs" | "Gaming" | "Sustainability" | "AI/ML" | "Social"
   status: "live" | "active" | "funded"
   createdDate: string
   fundingGoal: number
@@ -33,10 +31,7 @@ export const SEED_PROJECTS: Project[] = [
   {
     id: 1,
     name: "SUI DeFi Aggregator",
-    description: "Aggregate yield from top protocols on Sui with auto-compounding vaults.",
-    longDescription:
-      "A meta‑yield protocol that routes liquidity across leading Sui DEXs and lending markets. Vault strategies auto‑compound rewards, rebalance positions, and optimize fees using on‑chain execution. The protocol shares performance fees with backers and governance token holders.",
-    category: "DeFi",
+    description: "A meta‑yield protocol that routes liquidity across leading Sui DEXs and lending markets. Vault strategies auto‑compound rewards, rebalance positions, and optimize fees using on‑chain execution. The protocol shares performance fees with backers and governance token holders.",
     status: "active",
     createdDate: "2024-07-08",
     fundingGoal: 15000,
@@ -52,10 +47,7 @@ export const SEED_PROJECTS: Project[] = [
   {
     id: 2,
     name: "NFT Creator Studio",
-    description: "Create, mint and trade NFTs with AI-powered art pipelines.",
-    longDescription:
-      "A creator‑first toolkit for generative and 1/1 drops on Sui. Artists can design with AI assists, schedule mints, create allowlists, and launch storefronts. Royalties are enforced on‑chain with open marketplace adapters.",
-    category: "NFTs",
+    description: "A creator‑first toolkit for generative and 1/1 drops on Sui. Artists can design with AI assists, schedule mints, create allowlists, and launch storefronts. Royalties are enforced on‑chain with open marketplace adapters.",
     status: "funded",
     createdDate: "2024-05-20",
     fundingGoal: 8000,
@@ -71,10 +63,7 @@ export const SEED_PROJECTS: Project[] = [
   {
     id: 3,
     name: "Sustainable Energy Tracker",
-    description: "Carbon credit tracking and marketplace for renewable energy.",
-    longDescription:
-      "Enterprises, producers, and auditors issue verifiable renewable‑energy certificates on Sui. Credits are tokenized, tradable, and retired with public attestations. Tooling includes IoT oracles, validator dashboards, and APIs for ESG reporting.",
-    category: "Sustainability",
+    description: "Enterprises, producers, and auditors issue verifiable renewable‑energy certificates on Sui. Credits are tokenized, tradable, and retired with public attestations. Tooling includes IoT oracles, validator dashboards, and APIs for ESG reporting.",
     status: "live",
     createdDate: "2024-06-15",
     fundingGoal: 20000,
@@ -90,10 +79,7 @@ export const SEED_PROJECTS: Project[] = [
   {
     id: 4,
     name: "On‑chain Gaming SDK",
-    description: "SDK for real‑time on-chain game logic and assets on Sui.",
-    longDescription:
-      "A TypeScript + Move SDK that makes it trivial to compose on‑chain game loops, items, and marketplaces. Comes with Unity/Unreal bindings, signer abstractions, and battle‑tested templates for PvP and PvE titles.",
-    category: "Gaming",
+    description: "A TypeScript + Move SDK that makes it trivial to compose on‑chain game loops, items, and marketplaces. Comes with Unity/Unreal bindings, signer abstractions, and battle‑tested templates for PvP and PvE titles.",
     status: "active",
     createdDate: "2024-06-11",
     fundingGoal: 12000,
@@ -109,10 +95,7 @@ export const SEED_PROJECTS: Project[] = [
   {
     id: 5,
     name: "AI Strategy Vaults",
-    description: "ML‑driven perpetual strategies that auto‑rebalance across DEXs.",
-    longDescription:
-      "Research‑grade ML signals power delta‑neutral and momentum strategies on perpetual venues. Vaults execute with risk limits, circuit breakers, and transparent performance. Backers earn a share of fees and performance carry.",
-    category: "AI/ML",
+    description: "Research‑grade ML signals power delta‑neutral and momentum strategies on perpetual venues. Vaults execute with risk limits, circuit breakers, and transparent performance. Backers earn a share of fees and performance carry.",
     status: "active",
     createdDate: "2024-06-28",
     fundingGoal: 22000,
@@ -128,10 +111,7 @@ export const SEED_PROJECTS: Project[] = [
   {
     id: 6,
     name: "Impact Grants",
-    description: "Micro‑funding for social projects verified by community attestations.",
-    longDescription:
-      "A quadratic‑funding style grants platform. Applicants submit lightweight proposals; community attestations and matching pools determine allocations. Milestones release funds and on‑chain attestations track delivery.",
-    category: "Social",
+    description: "A quadratic‑funding style grants platform. Applicants submit lightweight proposals; community attestations and matching pools determine allocations. Milestones release funds and on‑chain attestations track delivery.",
     status: "live",
     createdDate: "2024-07-01",
     fundingGoal: 10000,

@@ -1,3 +1,5 @@
+"use client"
+
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/header"
@@ -5,13 +7,64 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar, Users, Target, ArrowLeft } from "lucide-react"
-import type { Milestone } from "@/lib/projects"
-import { getProjectsServer, percentFunded } from "@/lib/projects"
+import type { Milestone, Project } from "@/lib/projects"
+import { percentFunded, SEED_PROJECTS } from "@/lib/projects"
+import { getProjectsFromBlockchain, blockchainToUIProject } from "@/lib/blockchain"
+import { useSuiClient } from "@mysten/dapp-kit"
+import React from "react"
 
-export default async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const projects = await getProjectsServer()
-  const project = projects.find((p) => p.id === Number(id))
+export default function ProjectDetail({ params }: { params: { id: string } }) {
+  const { id } = params
+  const [project, setProject] = React.useState<Project | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const suiClient = useSuiClient()
+
+  React.useEffect(() => {
+    async function loadProject() {
+      setLoading(true)
+      try {
+        // Try to load from blockchain first
+        const blockchainProjects = await getProjectsFromBlockchain(suiClient)
+        if (blockchainProjects.length > 0) {
+          const uiProjects = blockchainProjects.map(blockchainToUIProject)
+          const foundProject = uiProjects.find((p) => String(p.id) === id)
+          if (foundProject) {
+            setProject(foundProject)
+            return
+          }
+        }
+
+        // Fallback to seed data
+        const seedProject = SEED_PROJECTS.find((p) => String(p.id) === id)
+        if (seedProject) {
+          setProject(seedProject)
+        }
+      } catch (error) {
+        console.error('Error loading project:', error)
+        // Fallback to seed data on error
+        const seedProject = SEED_PROJECTS.find((p) => String(p.id) === id)
+        if (seedProject) {
+          setProject(seedProject)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProject()
+  }, [id, suiClient])
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="container pt-28 md:pt-36 pb-12">
+          <div className="text-center">Loading project...</div>
+        </div>
+      </>
+    )
+  }
+
   if (!project) return notFound()
   const pct = percentFunded(project)
 
@@ -27,7 +80,6 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle className="text-2xl">{project.name}</CardTitle>
-              <Badge variant="outline">{project.category}</Badge>
               <Badge className="capitalize">{project.status}</Badge>
             </div>
             <CardDescription>{project.description}</CardDescription>
@@ -67,7 +119,7 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold mb-2">About this project</h3>
                   <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
-                    {project.longDescription || project.description}
+                    {project.description}
                   </p>
                 </div>
                 {project.milestones?.length ? (

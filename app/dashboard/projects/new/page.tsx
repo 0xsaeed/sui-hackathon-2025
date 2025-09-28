@@ -13,12 +13,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import React from 'react'
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit'
+import { createProjectTransaction, type ProjectFormData } from '@/lib/blockchain'
+import { toast } from 'sonner'
 
-const categories = ["DeFi", "NFTs", "Gaming", "Sustainability", "AI/ML", "Social"] as const
-const statuses = ["active", "live", "funded"] as const
 
 export default function NewProjectPage() {
   const router = useRouter()
+  const currentAccount = useCurrentAccount()
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
+  const suiClient = useSuiClient()
+
   const [submitting, setSubmitting] = React.useState(false)
   const [milestones, setMilestones] = React.useState<{ title: string; percent: number; endDate: string }[]>([])
   const [mTitle, setMTitle] = React.useState("")
@@ -33,17 +38,73 @@ export default function NewProjectPage() {
     setMDate("")
   }
 
-  function handleSubmit(formData: FormData) {
+  async function handleSubmit(formData: FormData) {
+    console.log('Form submission started')
+
+    if (!currentAccount) {
+      console.log('No wallet connected')
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    console.log('Wallet connected:', currentAccount.address)
     setSubmitting(true)
-    const payload: Record<string, unknown> = Object.fromEntries(formData.entries())
-    payload["milestones"] = milestones
-    // In a real app this would POST to your API.
-    console.log('Create project payload', payload)
-    // Simulate success and navigate back to projects.
-    setTimeout(() => {
+
+    try {
+      // Convert form data to our format
+      const projectData: ProjectFormData = {
+        name: formData.get('name') as string,
+        description: formData.get('description') as string,
+        fundingGoal: Number(formData.get('fundingGoal')),
+        timeLeft: formData.get('timeLeft') as string,
+        imageUrl: formData.get('imageUrl') as string,
+        siteUrl: formData.get('siteUrl') as string,
+        milestones: milestones
+      }
+
+      console.log('Project data:', projectData)
+
+      // Validate milestones total to 100%
+      const totalPercent = milestones.reduce((sum, m) => sum + m.percent, 0)
+      if (milestones.length > 0 && totalPercent !== 100) {
+        console.log('Milestone validation failed, total:', totalPercent)
+        toast.error('Milestones must total exactly 100%')
+        setSubmitting(false)
+        return
+      }
+
+      console.log('Creating blockchain transaction...')
+      // Create the blockchain transaction
+      const tx = createProjectTransaction(projectData, currentAccount.address)
+      console.log('Transaction created:', tx)
+
+      // Sign and execute the transaction
+      console.log('Signing transaction...')
+      signAndExecuteTransaction(
+        { transaction: tx },
+        {
+          onSuccess: (result) => {
+            console.log('✅ Project created successfully!')
+            console.log('Transaction result:', result)
+            toast.success('Project created successfully!')
+            console.log('Redirecting to /dashboard/projects')
+            // Add a small delay to let the blockchain sync, then redirect
+            setTimeout(() => {
+              router.push('/dashboard/projects?refresh=true')
+            }, 2000)
+          },
+          onError: (error) => {
+            console.error('❌ Error creating project:', error)
+            toast.error('Failed to create project: ' + error.message)
+            setSubmitting(false)
+          }
+        }
+      )
+    } catch (error) {
+      console.error('Error preparing transaction:', error)
+      toast.error('Failed to prepare transaction')
       setSubmitting(false)
-      router.push('/dashboard/projects')
-    }, 600)
+    }
   }
 
   return (
@@ -62,32 +123,31 @@ export default function NewProjectPage() {
           <Card>
             <CardHeader>
               <CardTitle>Create New Project</CardTitle>
-              <CardDescription>Provide details for your fundraising project</CardDescription>
+              <CardDescription>
+                Provide details for your fundraising project
+                {currentAccount && (
+                  <span className="block text-sm text-green-600 mt-1">
+                    Connected: {currentAccount.address.slice(0, 8)}...{currentAccount.address.slice(-4)}
+                  </span>
+                )}
+                {!currentAccount && (
+                  <span className="block text-sm text-orange-600 mt-1">
+                    Please connect your wallet to create a project
+                  </span>
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
+                handleSubmit(formData)
+              }} className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="name">Project Name</Label>
                   <Input id="name" name="name" required placeholder="e.g. SUI DeFi Aggregator" />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <select id="category" name="category" className="bg-transparent border rounded-md px-3 py-2">
-                    {categories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <select id="status" name="status" className="bg-transparent border rounded-md px-3 py-2">
-                    {statuses.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="fundingGoal">Funding Goal (SUI)</Label>
@@ -99,14 +159,19 @@ export default function NewProjectPage() {
                   <Input id="timeLeft" name="timeLeft" placeholder="e.g. 14 days" />
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">Short Description</Label>
-                  <Textarea id="description" name="description" rows={3} placeholder="One‑line summary of your project" />
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Project Image URL</Label>
+                  <Input id="imageUrl" name="imageUrl" type="url" placeholder="https://example.com/image.jpg" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="siteUrl">Project Website URL</Label>
+                  <Input id="siteUrl" name="siteUrl" type="url" placeholder="https://yourproject.com" />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="longDescription">Long Description</Label>
-                  <Textarea id="longDescription" name="longDescription" rows={6} placeholder="Tell backers what you’re building, your roadmap, and how funds will be used." />
+                  <Label htmlFor="description">Project Description</Label>
+                  <Textarea id="description" name="description" rows={6} required placeholder="Tell backers what you're building, your roadmap, and how funds will be used." />
                 </div>
 
                 {/* Milestones */}
@@ -174,7 +239,12 @@ export default function NewProjectPage() {
 
                 <div className="md:col-span-2 flex gap-3 justify-end">
                   <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                  <Button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create Project'}</Button>
+                  <Button
+                    type="submit"
+                    disabled={submitting || !currentAccount}
+                  >
+                    {submitting ? 'Creating…' : currentAccount ? 'Create Project' : 'Connect Wallet First'}
+                  </Button>
                 </div>
               </form>
             </CardContent>
