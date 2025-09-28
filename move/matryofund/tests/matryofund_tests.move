@@ -19,7 +19,7 @@ const USER1: address = @0xB0B;
 const USER2: address = @0xCAFE;
 const USER3: address = @0xDEAD;
 
-const FUNDING_GOAL: u128 = 1000_000_000_000; // 1000 SUI in MIST
+const FUNDING_GOAL: u64 = 1000_000_000_000; // 1000 SUI in MIST
 const FUNDING_AMOUNT: u64 = 100_000_000_000; // 100 SUI in MIST
 
 #[test]
@@ -146,7 +146,6 @@ fun test_integration_full_crowdfunding_cycle() {
     let ctx = ts::ctx(&mut scenario);
     let payment1 = coin::mint_for_testing<SUI>(400_000_000_000, ctx); // 400 SUI
     project::deposit_funds(&mut project, payment1, ctx, &clock);
-    let project_id = project::get_id(&project);
     ts::return_shared(project);
 
     ts::next_tx(&mut scenario, USER2);
@@ -167,17 +166,20 @@ fun test_integration_full_crowdfunding_cycle() {
 
     // Create a proposal for the funded project
     ts::next_tx(&mut scenario, USER1);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal for project modification";
+    let proposal_description = string::utf8(b"Proposal for project modification");
+    // Set deadline to 2 days from current time (well within 7-day max limit)
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000;
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
     );
+    ts::return_shared(project);
 
     // Users vote on the proposal
     ts::next_tx(&mut scenario, USER1);
@@ -332,7 +334,8 @@ fun test_integration_pledge_transfer() {
     // USER1 transfers pledge to USER2
     ts::next_tx(&mut scenario, USER1);
     let pledge = ts::take_from_sender<Pledge>(&scenario);
-    project::transfer_pledge(pledge, USER2);
+    let ctx = ts::ctx(&mut scenario);
+    project::transfer_pledge(pledge, USER2, ctx);
 
     // Verify USER2 now has the pledge
     ts::next_tx(&mut scenario, USER2);
