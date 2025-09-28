@@ -13,8 +13,8 @@ import { getProjectsFromBlockchain, blockchainToUIProject } from "@/lib/blockcha
 import { useSuiClient } from "@mysten/dapp-kit"
 import React from "react"
 
-export default function ProjectDetail({ params }: { params: { id: string } }) {
-  const { id } = params
+export default function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = React.use(params)
   const [project, setProject] = React.useState<Project | null>(null)
   const [loading, setLoading] = React.useState(true)
   const suiClient = useSuiClient()

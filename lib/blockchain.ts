@@ -2,7 +2,6 @@
 
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import { bcs } from "@mysten/sui/bcs";
 import { TESTNET_COUNTER_PACKAGE_ID } from "./constants";
 
 // Update constants to use the actual package ID for the matryofund contract
@@ -61,8 +60,7 @@ export function parseTimeLeft(timeLeft: string): number {
 
 // Create a new project on the blockchain
 export function createProjectTransaction(
-  formData: ProjectFormData,
-  signer: string
+  formData: ProjectFormData
 ): Transaction {
   const tx = new Transaction();
 
@@ -198,7 +196,7 @@ export async function getProjectsFromBlockchain(client: SuiClient): Promise<Bloc
     for (const event of events.data) {
       console.log('🔍 Processing milestone event:', event)
       if (event.parsedJson) {
-        const eventData = event.parsedJson as any;
+        const eventData = event.parsedJson as { project_id: string };
         const projectId = eventData.project_id;
         console.log('📝 Found project ID from milestone:', projectId)
 
@@ -223,30 +221,30 @@ export async function getProjectsFromBlockchain(client: SuiClient): Promise<Bloc
           console.log('📦 Project response:', projectResponse)
 
           if (projectResponse.data?.content && "fields" in projectResponse.data.content) {
-            const fields = projectResponse.data.content.fields as any;
+            const fields = projectResponse.data.content.fields as Record<string, unknown>;
 
             // Convert the blockchain data to our Project format
             const project: BlockchainProject = {
               id: projectResponse.data.objectId,
-              creator: fields.creator,
-              title: fields.title,
-              description: fields.description,
-              image_url: fields.image_url?.url || fields.image_url,
-              link: fields.link?.url || fields.link,
-              funding_start: parseInt(fields.funding_start),
-              funding_deadline: parseInt(fields.funding_deadline),
-              funding_goal: parseInt(fields.funding_goal),
-              total_raised: parseInt(fields.total_raised),
-              total_withdrawn_percentage: parseInt(fields.total_withdrawn_percentage),
-              close_on_funding_goal: fields.close_on_funding_goal,
-              milestones: fields.milestones?.map((m: any) => ({
-                title: m.title,
-                deadline: parseInt(m.deadline),
-                is_claimed: m.is_claimed,
-                release_percentage: parseInt(m.release_percentage)
+              creator: fields.creator as string,
+              title: fields.title as string,
+              description: fields.description as string,
+              image_url: (fields.image_url as { url?: string })?.url || fields.image_url as string,
+              link: (fields.link as { url?: string })?.url || fields.link as string,
+              funding_start: parseInt(fields.funding_start as string),
+              funding_deadline: parseInt(fields.funding_deadline as string),
+              funding_goal: parseInt(fields.funding_goal as string),
+              total_raised: parseInt(fields.total_raised as string),
+              total_withdrawn_percentage: parseInt(fields.total_withdrawn_percentage as string),
+              close_on_funding_goal: fields.close_on_funding_goal as boolean,
+              milestones: (fields.milestones as Array<Record<string, unknown>>)?.map((m) => ({
+                title: m.title as string,
+                deadline: parseInt(m.deadline as string),
+                is_claimed: m.is_claimed as boolean,
+                release_percentage: parseInt(m.release_percentage as string)
               })) || [],
-              milestone_index: parseInt(fields.milestone_index),
-              status: parseInt(fields.status)
+              milestone_index: parseInt(fields.milestone_index as string),
+              status: parseInt(fields.status as string)
             };
 
             projects.push(project);

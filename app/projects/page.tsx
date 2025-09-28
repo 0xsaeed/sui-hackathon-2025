@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Folder, Users, Calendar, Clock, TrendingUp, Search, ArrowUpDown, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import React from "react"
-import { SEED_PROJECTS, type Project, getProjectsClient, percentFunded, sortProjects, type SortKey } from "@/lib/projects"
+import { SEED_PROJECTS, type Project, percentFunded, sortProjects, type SortKey } from "@/lib/projects"
 import { useSuiClient } from "@mysten/dapp-kit"
 import { getProjectsFromBlockchain, blockchainToUIProject } from "@/lib/blockchain"
 

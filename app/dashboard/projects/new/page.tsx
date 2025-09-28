@@ -6,14 +6,14 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import React from 'react'
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit'
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { createProjectTransaction, type ProjectFormData } from '@/lib/blockchain'
 import { toast } from 'sonner'
 
@@ -22,7 +22,6 @@ export default function NewProjectPage() {
   const router = useRouter()
   const currentAccount = useCurrentAccount()
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
-  const suiClient = useSuiClient()
 
   const [submitting, setSubmitting] = React.useState(false)
   const [milestones, setMilestones] = React.useState<{ title: string; percent: number; endDate: string }[]>([])
@@ -75,7 +74,7 @@ export default function NewProjectPage() {
 
       console.log('Creating blockchain transaction...')
       // Create the blockchain transaction
-      const tx = createProjectTransaction(projectData, currentAccount.address)
+      const tx = createProjectTransaction(projectData)
       console.log('Transaction created:', tx)
 
       // Sign and execute the transaction

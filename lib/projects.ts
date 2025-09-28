@@ -135,7 +135,7 @@ export async function getProjectsServer(): Promise<Project[]> {
       if (!res.ok) throw new Error(`Failed ${res.status}`)
       const json = (await res.json()) as Project[]
       return json?.length ? json : SEED_PROJECTS
-    } catch (e) {
+    } catch {
       return SEED_PROJECTS
     }
   }
@@ -151,7 +151,7 @@ export async function getProjectsClient(): Promise<Project[]> {
       if (!res.ok) throw new Error(`Failed ${res.status}`)
       const json = (await res.json()) as Project[]
       return json?.length ? json : SEED_PROJECTS
-    } catch (e) {
+    } catch {
       return SEED_PROJECTS
     }
   }

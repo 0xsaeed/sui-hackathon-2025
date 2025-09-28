@@ -80,9 +80,9 @@ export default function ProjectsPage() {
         loadProjectsFromBlockchain()
       }, 1000)
     }
-  }, [])
+  }, [loadProjectsFromBlockchain])
 
-  const totalRaised = projects.reduce((sum, project) => sum + (project as any).currentFunding, 0)
+  const totalRaised = projects.reduce((sum, project) => sum + project.currentFunding, 0)
   const totalBackers = projects.reduce((sum, project) => sum + project.backers, 0)
   const activeProjects = projects.filter(p => p.status === "active" || p.status === "live").length
 
@@ -211,7 +211,7 @@ export default function ProjectsPage() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Current Funding</p>
-                        <p className="font-semibold">{(project as any).currentFunding?.toLocaleString()} SUI</p>
+                        <p className="font-semibold">{project.currentFunding?.toLocaleString()} SUI</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Backers</p>
@@ -226,12 +226,12 @@ export default function ProjectsPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progress</span>
-                        <span>{Math.round(((project as any).currentFunding / project.fundingGoal) * 100)}%</span>
+                        <span>{Math.round((project.currentFunding / project.fundingGoal) * 100)}%</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className="bg-primary h-2 rounded-full transition-all"
-                          style={{ width: `${Math.min(((project as any).currentFunding / project.fundingGoal) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((project.currentFunding / project.fundingGoal) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
