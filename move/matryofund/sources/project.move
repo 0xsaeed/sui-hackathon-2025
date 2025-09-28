@@ -169,7 +169,21 @@ public fun create_project(
     };
 
     // Share the project object
+    let project_id: ID = object::id(&project);
     transfer::share_object(project);
+    let event = ProjectCreatedEvent {
+        project_id: project_id,
+        creator: ctx.sender(),
+        title,
+        description,
+        image_url,
+        link,
+        funding_start: now,
+        funding_deadline,
+        funding_goal,
+        close_on_funding_goal,
+        // milestones, // cannot emit complex types
+    };
 }
 
 public fun finish_funding(project: &mut Project, clk: &Clock) {
@@ -187,6 +201,12 @@ public fun finish_funding(project: &mut Project, clk: &Clock) {
             project.status = config::status_failed();
         }
     };
+    let event = ProjectStatusChangedEvent {
+        project_id: get_id(project),
+        new_status: project.status,
+    };
+    event::emit(event);
+
 }
 
 public fun deposit_funds(
@@ -212,6 +232,10 @@ public fun deposit_funds(
     };
     // send pledge NFT to backer
     transfer::public_transfer(pledge, ctx.sender());
+    let event = ProjectFundedEvent {
+        project_id: get_id(project),
+        amount,
+    };
 }
 
 public fun transfer_pledge(pledge: Pledge, recipient: address, ctx: &mut TxContext) {
