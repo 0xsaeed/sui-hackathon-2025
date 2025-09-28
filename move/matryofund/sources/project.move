@@ -74,7 +74,13 @@ public struct ProjectCreatedEvent has copy, drop {
     funding_deadline: u64,
     funding_goal: u64,
     close_on_funding_goal: bool,
-    // milestones: vector<Milestone>, // cannot emit complex types
+}
+public struct MilestoneCreatedEvent has copy, drop {
+    project_id: ID,
+    index: u8,
+    title: String,
+    deadline: u64,
+    release_percentage: u8,
 }
 
 public struct ProjectFundedEvent has copy, drop {
@@ -170,7 +176,6 @@ public fun create_project(
 
     // Share the project object
     let project_id: ID = object::id(&project);
-    transfer::share_object(project);
     let event = ProjectCreatedEvent {
         project_id: project_id,
         creator: ctx.sender(),
@@ -184,6 +189,22 @@ public fun create_project(
         close_on_funding_goal,
         // milestones, // cannot emit complex types
     };
+
+    // Emit per-milestone events
+    let mut j: u64 = 0;
+    while (j < n) {
+        let ms = &milestone_titles[j];
+        let ms_event = MilestoneCreatedEvent {
+            project_id,
+            index: j as u8,
+            title: *ms,
+            deadline: milestone_deadlines[j],
+            release_percentage: milestone_percents[j],
+        };
+        event::emit(ms_event);
+        j = j + 1;
+    };
+    transfer::share_object(project);
 }
 
 public fun deposit_funds(
@@ -216,20 +237,20 @@ public fun deposit_funds(
 }
 
 public fun finish_funding(project: &mut Project, clk: &Clock) {
+    assert!(project.status == config::status_funding(), EProjectNotActive);
     let now = sui::clock::timestamp_ms(clk);
-    if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
-        // Successful funding
-        project.status = config::status_active();
-    } else {
-        assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
+    if (now > project.funding_deadline) {
         if (project.total_raised >= project.funding_goal) {
-            // Successful funding
-            project.status = 2; // active
+            change_project_status(project, config::status_active());
         } else {
-            // Failed funding
-            project.status = config::status_failed();
-        }
+            change_project_status(project, config::status_failed());
+        };
+    } else{
+        if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
+            change_project_status(project, config::status_active());
+        };
     };
+
     let event = ProjectStatusChangedEvent {
         project_id: get_id(project),
         new_status: project.status,
@@ -339,6 +360,16 @@ public fun get_description(project: &Project): String { project.description }
 public fun get_image_url(project: &Project): Url { project.image_url }
 
 public fun get_status(project: &Project): u8 { project.status }
+
+public fun get_total_raised(project: &Project): u64 { project.total_raised }
+
+public fun get_pledge_project_id(pledge: &Pledge): ID {
+    pledge.project_id
+}
+
+public fun get_pledge_amount(pledge: &Pledge): u64 {
+    pledge.amount
+}
 
 // ######################################## package Functions ##################################
 
