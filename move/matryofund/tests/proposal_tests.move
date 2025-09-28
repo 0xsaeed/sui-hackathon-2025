@@ -618,13 +618,21 @@ fun test_execute_proposal_wrong_conditions() {
 
     // Try to execute proposal - should fail due to assertion in execute_proposal
     // Note: The current implementation has assert!(proposal.executed, EProposalAlreadyExecuted)
-    // which seems to be inverted logic - it should probably be !proposal.executed
+ // Advance time past proposal deadline to make it executable
+    clock::increment_for_testing(&mut clock, 3 * 24 * 60 * 60 * 1000); // Advance by 3 days
+
+    // Execute proposal first time (should succeed)
     ts::next_tx(&mut scenario, USER1);
     let mut proposal = ts::take_shared<Proposal>(&scenario);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
+    proposal::execute_proposal(ctx, &mut proposal, &mut project, &clock);
+    ts::return_shared(project);
+    ts::return_shared(proposal);
 
-    // Need to get project again for execute_proposal
+    // Try to execute proposal again - should fail with EProposalAlreadyExecuted
     ts::next_tx(&mut scenario, USER1);
+    let mut proposal = ts::take_shared<Proposal>(&scenario);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     proposal::execute_proposal(ctx, &mut proposal, &mut project, &clock);
