@@ -94,10 +94,9 @@ public struct ProjectStatusChangedEvent has copy, drop {
     new_status: u8,
 }
 
-public struct MilestoneClaimedEvent has copy, drop {
+public struct ClaimedEvent has copy, drop {
     project_id: ID,
-    milestone_index: u8,
-    title: String,
+    last_index: u8,
     release_percentage: u8,
     amount_released: u64,
 }
@@ -135,6 +134,7 @@ public fun create_project(
     let mut total_percentage = 0;
     let mut last_deadline = now;
     while (i < n) {
+        assert!(milestone_deadlines[i] > funding_deadline, EMilestoneInvalidData);
         assert!(milestone_deadlines[i] > last_deadline, EMilestoneInvalidData);
         last_deadline = milestone_deadlines[i];
         let ms = Milestone {
@@ -169,23 +169,20 @@ public fun create_project(
     };
 
     // Share the project object
+    let project_id: ID = object::id(&project);
     transfer::share_object(project);
-}
-
-public fun finish_funding(project: &mut Project, clk: &Clock) {
-    let now = sui::clock::timestamp_ms(clk);
-    if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
-        // Successful funding
-        project.status = config::status_active();
-    } else {
-        assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
-        if (project.total_raised >= project.funding_goal) {
-            // Successful funding
-            project.status = 2; // active
-        } else {
-            // Failed funding
-            project.status = config::status_failed();
-        }
+    let event = ProjectCreatedEvent {
+        project_id: project_id,
+        creator: ctx.sender(),
+        title,
+        description,
+        image_url,
+        link,
+        funding_start: now,
+        funding_deadline,
+        funding_goal,
+        close_on_funding_goal,
+        // milestones, // cannot emit complex types
     };
 }
 
@@ -212,7 +209,35 @@ public fun deposit_funds(
     };
     // send pledge NFT to backer
     transfer::public_transfer(pledge, ctx.sender());
+    let event = ProjectFundedEvent {
+        project_id: get_id(project),
+        amount,
+    };
 }
+
+public fun finish_funding(project: &mut Project, clk: &Clock) {
+    let now = sui::clock::timestamp_ms(clk);
+    if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
+        // Successful funding
+        project.status = config::status_active();
+    } else {
+        assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
+        if (project.total_raised >= project.funding_goal) {
+            // Successful funding
+            project.status = 2; // active
+        } else {
+            // Failed funding
+            project.status = config::status_failed();
+        }
+    };
+    let event = ProjectStatusChangedEvent {
+        project_id: get_id(project),
+        new_status: project.status,
+    };
+    event::emit(event);
+
+}
+
 
 public fun transfer_pledge(pledge: Pledge, recipient: address, ctx: &mut TxContext) {
     let event = PledgeTransferredEvent {
@@ -261,16 +286,48 @@ public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): (
     event::emit(event);
 }
 
-public fun claim_milestone(project: &mut Project, clk: &Clock, ctx: &mut TxContext) {
-    assert!(ctx.sender() == project.creator, EOnlyCreator);
+public fun claim(project: &mut Project, clk: &Clock, ctx: &mut TxContext) {
+    assert!(tx_context::sender(ctx) == project.creator, EOnlyCreator);
     assert!(project.status == config::status_active(), EProjectNotActive);
-    // TODOOOOOOO
 
-    // If all milestones claimed, close the project
-    if (project.total_withdrawn_percentage == 100) {
-        project.status = config::status_closed();
+    let now = sui::clock::timestamp_ms(clk);
+    let n = vector::length(&project.milestones);
+    let mut i: u64 = project.milestone_index as u64;
+    let mut last_claimed_index = project.milestone_index as u64;
+    let mut percentage_to_release: u8 = 0;
+
+    while (i < n && project.milestones[i].deadline <= now) {
+        let ms_ref = &mut project.milestones[i];
+        if (!ms_ref.is_claimed) {
+            percentage_to_release = percentage_to_release + ms_ref.release_percentage;
+            ms_ref.is_claimed = true;
+            last_claimed_index = i;
+        };
+        i = i + 1;
     };
+
+    assert!(percentage_to_release > 0, EMilestoneAlreadyClaimed);
+
+    project.milestone_index = last_claimed_index as u8;
+    project.total_withdrawn_percentage =
+        project.total_withdrawn_percentage + percentage_to_release;
+
+    let amount_to_release =
+        (project.total_raised * (percentage_to_release as u64)) / 100u64;
+
+    let release_balance = project.vault.split(amount_to_release as u64);
+    let release_coin = release_balance.into_coin(ctx);
+    transfer::public_transfer(release_coin, project.creator);
+
+    let event = ClaimedEvent {
+        project_id: get_id(project),
+        last_index: last_claimed_index as u8,
+        release_percentage: percentage_to_release,
+        amount_released: amount_to_release as u64,
+    };
+    event::emit(event);
 }
+
 
 // ######################################## View Functions ##################################
 public fun get_id(project: &Project): ID { object::id(project) }
@@ -283,16 +340,24 @@ public fun get_image_url(project: &Project): Url { project.image_url }
 
 public fun get_status(project: &Project): u8 { project.status }
 
-// ######################################## Admin Functions ##################################
+// ######################################## package Functions ##################################
 
-public(package) fun set_status_voting(project: &mut Project) {
-    project.status = config::status_voting();
+public(package) fun change_project_status(project: &mut Project, new_status: u8) {
+    project.status = new_status;
+    let event = ProjectStatusChangedEvent {
+        project_id: get_id(project),
+        new_status,
+    };
+    event::emit(event);
 }
+// public(package) fun set_status_voting(project: &mut Project) {
+//     project.status = config::status_voting();
+// }
 
-public(package) fun set_status_active(project: &mut Project) {
-    project.status = config::status_active();
-}
+// public(package) fun set_status_active(project: &mut Project) {
+//     project.status = config::status_active();
+// }
 
-public(package) fun set_status_rejected(project: &mut Project) {
-    project.status = config::status_rejected();
-}
+// public(package) fun set_status_rejected(project: &mut Project) {
+//     project.status = config::status_rejected();
+// }
