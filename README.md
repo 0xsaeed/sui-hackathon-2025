@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="MatryoFund Logo" width="200"/>
+  <img src="https://raw.githubusercontent.com/0xsaeed/sui-hackathon-2025/33baeaaad987e54844c7a85d73ab2f89c57c0ede/app/icon0.svg" alt="MatryoFund Logo" width="200"/>
 </p>
 
 # MatryoFund – Milestone-Based Crowdfunding on Sui
