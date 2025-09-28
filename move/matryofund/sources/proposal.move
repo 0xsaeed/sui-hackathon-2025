@@ -24,8 +24,8 @@ public struct Proposal has key {
     proposer: address,
     description: String,
     deadline: u64,
-    yes_votes: u128,
-    no_votes: u128,
+    yes_votes: u64,
+    no_votes: u64,
     executed: bool,
     voters: vector<ID>,
 }
@@ -43,8 +43,8 @@ public struct ProposalExecutedEvent has copy, drop {
     proposal_id: ID,
     project_id: ID,
     executed: bool,
-    yes_votes: u128,
-    no_votes: u128,
+    yes_votes: u64,
+    no_votes: u64,
 }
 
 public struct VoteCastEvent has copy, drop {

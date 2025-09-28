@@ -35,8 +35,8 @@ public struct Project has key {
     link: Url,
     funding_start: u64,
     funding_deadline: u64,
-    funding_goal: u128,
-    total_raised: u128, // total contributed (MIST)
+    funding_goal: u64,
+    total_raised: u64, // total contributed (MIST)
     total_withdrawn_percentage: u8, // total withdrawn by creator (%)
     close_on_funding_goal: bool, // auto-close funding when goal is reached
     milestones: vector<Milestone>, // must sum to 100
@@ -55,7 +55,7 @@ public struct Milestone has copy, store {
 public struct Pledge has key, store {
     id: UID,
     project_id: ID,
-    amount: u128,
+    amount: u64,
     name: String,
     description: String,
     image_url: Url,
@@ -72,21 +72,21 @@ public struct ProjectCreatedEvent has copy, drop {
     link: Url,
     funding_start: u64,
     funding_deadline: u64,
-    funding_goal: u128,
+    funding_goal: u64,
     close_on_funding_goal: bool,
     // milestones: vector<Milestone>, // cannot emit complex types
 }
 
 public struct ProjectFundedEvent has copy, drop {
     project_id: ID,
-    amount: u128,
+    amount: u64,
 }
 
 public struct ProjectRefundedEvent has copy, drop {
     project_id: ID,
     pledge_id: ID,
     backer: address,
-    amount: u128,
+    amount: u64,
 }
 
 public struct ProjectStatusChangedEvent has copy, drop {
@@ -99,7 +99,7 @@ public struct MilestoneClaimedEvent has copy, drop {
     milestone_index: u8,
     title: String,
     release_percentage: u8,
-    amount_released: u128,
+    amount_released: u64,
 }
 // ############################### Public Functions ##################################
 
@@ -110,7 +110,7 @@ public fun create_project(
     image_url: Url,
     link: Url,
     funding_deadline: u64,
-    funding_goal: u128,
+    funding_goal: u64,
     close_on_funding_goal: bool,
     milestone_titles: vector<String>,
     milestone_deadlines: vector<u64>,
@@ -153,7 +153,7 @@ public fun create_project(
         funding_start: now,
         funding_deadline,
         funding_goal,
-        total_raised: 0u128,
+        total_raised: 0u64,
         total_withdrawn_percentage: 0u8,
         close_on_funding_goal,
         milestones,
@@ -192,9 +192,9 @@ public fun deposit_funds(
     assert!(project.status == config::status_funding(), EProjectNotActive);
     let now = sui::clock::timestamp_ms(clk);
     assert!(now < project.funding_deadline, EFundingAlreadyEnded);
-    let amount = payment.value() as u128;
+    let amount = payment.value() as u64;
     project.vault.join(payment.into_balance());
-    project.total_raised = project.total_raised + (amount as u128);
+    project.total_raised = project.total_raised + (amount as u64);
 
     let pledge = Pledge {
         id: object::new(ctx),
@@ -220,12 +220,12 @@ public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): (
     let pledge_id = object::id(&pledge);
     let backer = tx_context::sender(ctx);
     let Pledge { id, project_id, amount, .. } = pledge;
-    let mut amount_to_refund = 0u128;
+    let mut amount_to_refund = 0u64;
     if (project.status != config::status_failed()) {
-        amount_to_refund = amount as u128;
+        amount_to_refund = amount as u64;
     } else {
         amount_to_refund =
-            amount * (100u128-(project.total_withdrawn_percentage as u128)) / 100u128;
+            amount * (100u64-(project.total_withdrawn_percentage as u64)) / 100u64;
     };
 
     /// TODO: transfer refund
