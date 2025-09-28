@@ -74,7 +74,13 @@ public struct ProjectCreatedEvent has copy, drop {
     funding_deadline: u64,
     funding_goal: u64,
     close_on_funding_goal: bool,
-    // milestones: vector<Milestone>, // cannot emit complex types
+}
+public struct MilestoneCreatedEvent has copy, drop {
+    project_id: ID,
+    index: u8,
+    title: String,
+    deadline: u64,
+    release_percentage: u8,
 }
 
 public struct ProjectFundedEvent has copy, drop {
@@ -170,7 +176,6 @@ public fun create_project(
 
     // Share the project object
     let project_id: ID = object::id(&project);
-    transfer::share_object(project);
     let event = ProjectCreatedEvent {
         project_id: project_id,
         creator: ctx.sender(),
@@ -184,6 +189,22 @@ public fun create_project(
         close_on_funding_goal,
         // milestones, // cannot emit complex types
     };
+
+    // Emit per-milestone events
+    let mut j: u64 = 0;
+    while (j < n) {
+        let ms = &milestone_titles[j];
+        let ms_event = MilestoneCreatedEvent {
+            project_id,
+            index: j as u8,
+            title: *ms,
+            deadline: milestone_deadlines[j],
+            release_percentage: milestone_percents[j],
+        };
+        event::emit(ms_event);
+        j = j + 1;
+    };
+    transfer::share_object(project);
 }
 
 public fun deposit_funds(
