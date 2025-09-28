@@ -47,6 +47,8 @@ const MODULE_NAME = "project";
 const FUNCTION_NAME = "create_project";
 const CLOCK_OBJECT_ID = "0x6"; // shared Clock
 
+const MIST_PER_SUI = 1_000_000_000n;
+
 // -----------------------------
 // Service Class
 // -----------------------------
@@ -148,28 +150,42 @@ class ProjectService {
     };
   }
 
+  private parseSuiAmountToMist(value: string, label: string): bigint {
+    const normalized = value?.toString().trim();
+    if (!normalized) {
+      throw new Error(`${label} is required`);
+    }
+    const sanitized = normalized.replace(/_/g, "");
+    if (!/^\d+(\.\d{0,9})?$/.test(sanitized)) {
+      throw new Error(`${label} must be a valid number with up to 9 decimal places`);
+    }
+    const [wholePart, fractionalPart = ""] = sanitized.split(".");
+    const paddedFraction = (fractionalPart + "000000000").slice(0, 9);
+    const mist = BigInt(wholePart) * MIST_PER_SUI + BigInt(paddedFraction);
+    if (mist <= 0n) {
+      throw new Error(`${label} must be greater than 0`);
+    }
+    return mist;
+  }
+
   private formatDataForBlockchain(data: ProjectFormData) {
+    const fundingGoal = this.parseSuiAmountToMist(data.fundingGoal, "Funding goal");
     const formatted = {
       title: data.name.trim(),
       description: data.description.trim(),
       imageUrl: data.imageUrl.trim(),
       projectLink: data.projectLink.trim(),
-      // SUI → MIST
-      fundingGoal: BigInt(
-        Math.floor(parseFloat(data.fundingGoal) * 1_000_000_000),
-      ),
+      fundingGoal,
       // your Move uses timestamp_ms(clk), so pass ms
       fundingDeadline: Math.floor(new Date(data.fundingDeadline).getTime()),
       closeOnFundingGoal: data.closeOnFundingGoal,
       milestones: {
         titles: data.milestones.map((m) => m.title.trim()),
-        deadlines: data.milestones.map((m) =>
-          Math.floor(new Date(m.endDate).getTime()),
-        ),
+        deadlines: data.milestones.map((m) => Math.floor(new Date(m.endDate).getTime())),
         percents: data.milestones.map((m) => Number(m.percent)),
       },
     };
-    console.log("📝 Formatted blockchain data:", formatted);
+    console.log("Formatted blockchain data:", formatted);
     return formatted;
   }
 
@@ -207,7 +223,7 @@ class ProjectService {
         imageUrlArg, // Url
         linkArg, // Url
         tx.pure.u64(data.fundingDeadline),
-        tx.pure.u128(data.fundingGoal),
+        tx.pure.u64(data.fundingGoal),
         tx.pure.bool(data.closeOnFundingGoal),
         tx.pure.vector("string", data.milestones.titles),
         tx.pure.vector("u64", data.milestones.deadlines),
@@ -218,9 +234,50 @@ class ProjectService {
     });
 
     tx.setGasBudget(10_000_000);
-    console.log("⛽ Gas budget set to 10M");
+    console.log("Gas budget set to 10M");
 
     return tx;
+  }
+
+  async depositToProject(
+    params: {
+      projectId: string;
+      sharedInitialVersion?: string | null;
+      amount: string;
+    },
+    signAndExecuteTransactionBlock: SignAndExecuteFn,
+  ): Promise<TransactionResult> {
+    const { projectId, sharedInitialVersion, amount } = params;
+    if (!projectId) {
+      throw new Error("Project id is required");
+    }
+    if (!sharedInitialVersion) {
+      throw new Error("Shared object version is missing for this project");
+    }
+
+    const amountInMist = this.parseSuiAmountToMist(amount, "Amount");
+
+    const tx = new Transaction();
+    const [payment] = tx.splitCoins(tx.gas, [tx.pure.u64(amountInMist)]);
+
+    const target = `${this.packageId}::${MODULE_NAME}::deposit_funds`;
+    console.log("Adding deposit moveCall with target:", target);
+    tx.moveCall({
+      target,
+      arguments: [
+        tx.sharedObjectRef({
+          objectId: projectId,
+          initialSharedVersion: sharedInitialVersion,
+          mutable: true,
+        }),
+        payment,
+        tx.object(CLOCK_OBJECT_ID),
+      ],
+    });
+
+    tx.setGasBudget(5_000_000);
+
+    return this.executeProjectTx(tx, signAndExecuteTransactionBlock);
   }
 
   async executeProjectTx(

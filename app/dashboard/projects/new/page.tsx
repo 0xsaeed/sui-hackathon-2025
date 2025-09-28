@@ -12,12 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Calendar, Target, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { getProjectsServer, percentFunded } from "@/lib/project";
+import type { UIProject } from "@/lib/project";
 
 import {
   useCurrentAccount,
@@ -61,13 +65,57 @@ export default function NewProjectPage() {
   const [mPercent, setMPercent] = React.useState<number | "">("");
   const [mDate, setMDate] = React.useState("");
 
+  const [existingProjects, setExistingProjects] = React.useState<UIProject[]>(
+    [],
+  );
+  const [projectsLoading, setProjectsLoading] = React.useState(true);
+  const [projectsError, setProjectsError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const data = await getProjectsServer();
+        if (!active) {
+          return;
+        }
+        setExistingProjects(data);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load on-chain projects";
+        setProjectsError(message);
+      } finally {
+        if (!active) {
+          return;
+        }
+        setProjectsLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Calculate milestone percentage validation
   const totalPercent = milestones.reduce((sum, m) => sum + m.percent, 0);
   const remainingPercent = 100 - totalPercent;
   const isPercentageValid = totalPercent === 100;
 
   function addMilestone() {
-    if (!mTitle || mPercent === "" || mPercent < 0 || mPercent > 100 || !mDate) {
+    if (
+      !mTitle ||
+      mPercent === "" ||
+      mPercent < 0 ||
+      mPercent > 100 ||
+      !mDate
+    ) {
       toast.error("Please fill all milestone fields with valid data");
       return;
     }
@@ -76,7 +124,9 @@ export default function NewProjectPage() {
     const newTotal = totalPercent + newPercent;
 
     if (newTotal > 100) {
-      toast.error(`Adding ${newPercent}% would exceed 100% (current: ${totalPercent}%)`);
+      toast.error(
+        `Adding ${newPercent}% would exceed 100% (current: ${totalPercent}%)`,
+      );
       return;
     }
 
@@ -180,6 +230,109 @@ export default function NewProjectPage() {
         <div className="flex flex-1 flex-col p-6 space-y-6">
           <Card>
             <CardHeader>
+              <CardTitle>Existing On-chain Projects</CardTitle>
+              <CardDescription>
+                Review projects already published with this package.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {projectsLoading ? (
+                <p className="text-sm text-foreground/60">
+                  Loading on-chain projects...
+                </p>
+              ) : projectsError ? (
+                <p className="text-sm text-destructive">{projectsError}</p>
+              ) : existingProjects.length === 0 ? (
+                <p className="text-sm text-foreground/60">
+                  No on-chain projects found. Create the first one below.
+                </p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {existingProjects.map((project) => {
+                    const pct = percentFunded(project);
+                    return (
+                      <Card
+                        key={project.id}
+                        className="transition-colors hover:bg-muted/20"
+                      >
+                        <CardHeader className="space-y-1">
+                          <CardTitle className="text-base">
+                            {project.title}
+                          </CardTitle>
+                          <CardDescription>
+                            {project.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                          <div className="flex items-center gap-2 text-xs text-foreground/60">
+                            <Badge variant="outline" className="capitalize">
+                              {project.status}
+                            </Badge>
+                            {project.milestones.length ? (
+                              <span>
+                                {project.milestones.length} milestones
+                              </span>
+                            ) : (
+                              <span>No milestones</span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-foreground/60">Goal</p>
+                              <p className="font-semibold">
+                                {project.fundingGoal.toLocaleString()} SUI
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-foreground/60">Raised</p>
+                              <p className="font-semibold">
+                                {project.currentFunding.toLocaleString()} SUI
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-xs">
+                              <span>Progress</span>
+                              <span>{Math.round(pct)}%</span>
+                            </div>
+                            <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                              <div
+                                className="h-2 rounded-full bg-primary"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-foreground/60">
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar className="size-3" />
+                              {new Date(
+                                project.createdDate,
+                              ).toLocaleDateString()}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Users className="size-3" />
+                              {project.backers ?? "N/A"}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Target className="size-3" />
+                              {project.milestones.length
+                                ? `Milestone ${Math.min(
+                                    project.milestoneIndex + 1,
+                                    project.milestones.length,
+                                  )}/${project.milestones.length}`
+                                : "Milestones pending"}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
               <CardTitle>Create New Project</CardTitle>
               <CardDescription>
                 Provide details for your fundraising project
@@ -271,9 +424,7 @@ export default function NewProjectPage() {
                         </span>
                       )}
                       {isPercentageValid && (
-                        <span className="text-green-500 ml-2">
-                          ✓ Complete
-                        </span>
+                        <span className="text-green-500 ml-2">✓ Complete</span>
                       )}
                     </div>
                   </div>
@@ -394,7 +545,11 @@ export default function NewProjectPage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={submitting || !isPercentageValid || milestones.length === 0}
+                    disabled={
+                      submitting ||
+                      !isPercentageValid ||
+                      milestones.length === 0
+                    }
                   >
                     {submitting ? "Creating…" : "Create Project"}
                   </Button>

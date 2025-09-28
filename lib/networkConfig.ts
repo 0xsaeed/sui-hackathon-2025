@@ -8,7 +8,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } =
       url: getFullnodeUrl("testnet"),
       variables: {
         crowdfundingPackageId:
-          "0xc135c7f84c9e7f0d88368879afdcf61da44ed5f1277354122d22741a5dba5528",
+          "0xa2fa1aa78581095d51a1396cd9d988098fdc87ec33b03a4715fbeb53fa30a963",
       },
     },
     devnet: {
