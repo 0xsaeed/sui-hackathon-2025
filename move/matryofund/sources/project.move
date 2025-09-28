@@ -283,16 +283,24 @@ public fun get_image_url(project: &Project): Url { project.image_url }
 
 public fun get_status(project: &Project): u8 { project.status }
 
-// ######################################## Admin Functions ##################################
+// ######################################## package Functions ##################################
 
-public(package) fun set_status_voting(project: &mut Project) {
-    project.status = config::status_voting();
+public(package) fun change_project_status(project: &mut Project, new_status: u8) {
+    project.status = new_status;
+    let event = ProjectStatusChangedEvent {
+        project_id: get_id(project),
+        new_status,
+    };
+    event::emit(event);
 }
+// public(package) fun set_status_voting(project: &mut Project) {
+//     project.status = config::status_voting();
+// }
 
-public(package) fun set_status_active(project: &mut Project) {
-    project.status = config::status_active();
-}
+// public(package) fun set_status_active(project: &mut Project) {
+//     project.status = config::status_active();
+// }
 
-public(package) fun set_status_rejected(project: &mut Project) {
-    project.status = config::status_rejected();
-}
+// public(package) fun set_status_rejected(project: &mut Project) {
+//     project.status = config::status_rejected();
+// }

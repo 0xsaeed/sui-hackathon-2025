@@ -77,7 +77,7 @@ public fun create_proposal(
     assert!(proposal_duration <= config::max_voting_period(), EProposalDeadlineTooLong);
 
     // Change project status to voting
-    project::set_status_voting(project);
+    project::change_project_status(project, config::status_voting());
 
     Proposal {
         id: object::new(ctx),
@@ -108,10 +108,10 @@ public fun execute_proposal(
 
     if (proposal.yes_votes >= proposal.no_votes) {
         // Proposal passed - logic to transfer funds to the project owner would go here
-        project::set_status_active(project);
+        project::change_project_status(project, config::status_active());
     } else {
         // Proposal rejected
-        project::set_status_rejected(project);
+        project::change_project_status(project, config::status_rejected());
     };
 
     proposal.executed = true;
