@@ -16,7 +16,7 @@ const ADMIN: address = @0xA11CE;
 const USER1: address = @0xB0B;
 const USER2: address = @0xCAFE;
 
-const FUNDING_GOAL: u128 = 1000_000_000_000; // 1000 SUI in MIST
+const FUNDING_GOAL: u64 = 1000_000_000_000; // 1000 SUI in MIST
 const FUNDING_AMOUNT: u64 = 100_000_000_000; // 100 SUI in MIST
 const SMALL_FUNDING_AMOUNT: u64 = 50_000_000_000; // 50 SUI in MIST
 

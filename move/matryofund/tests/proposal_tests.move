@@ -18,7 +18,7 @@ const USER1: address = @0xB0B;
 const USER2: address = @0xCAFE;
 const USER3: address = @0xDEAD;
 
-const FUNDING_GOAL: u128 = 1000_000_000_000; // 1000 SUI in MIST
+const FUNDING_GOAL: u64 = 1000_000_000_000; // 1000 SUI in MIST
 const FUNDING_AMOUNT: u64 = 100_000_000_000; // 100 SUI in MIST
 
 #[test]
@@ -56,18 +56,32 @@ fun test_create_proposal_success() {
         ctx,
     );
 
+    // Fund the project to completion
     ts::next_tx(&mut scenario, USER1);
-    let project = ts::take_shared<Project>(&scenario);
-    let project_id = project::get_id(&project);
+    let mut project = ts::take_shared<Project>(&scenario);
+    let ctx = ts::ctx(&mut scenario);
+    let payment = coin::mint_for_testing<SUI>(FUNDING_GOAL as u64, ctx); // Fund to goal
+    project::deposit_funds(&mut project, payment, ctx, &clock);
+    ts::return_shared(project);
 
-    // Create proposal
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
+    let project_id = project::get_id(&project);
+    ts::return_shared(project);
+
+    // Create proposal (project is now ACTIVE)
+    ts::next_tx(&mut scenario, USER1);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal to change project direction";
-    let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000; // 2 days from now
+    let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
@@ -113,21 +127,33 @@ fun test_create_proposal_deadline_in_past() {
         ctx,
     );
 
+    // Fund the project to completion first
     ts::next_tx(&mut scenario, USER1);
-    let project = ts::take_shared<Project>(&scenario);
+    let mut project = ts::take_shared<Project>(&scenario);
+    let ctx = ts::ctx(&mut scenario);
+    let payment = coin::mint_for_testing<SUI>(FUNDING_GOAL as u64, ctx);
+    project::deposit_funds(&mut project, payment, ctx, &clock);
+    ts::return_shared(project);
+
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
     let project_id = project::get_id(&project);
+    ts::return_shared(project);
 
     // Try to create proposal with deadline in the past
+    ts::next_tx(&mut scenario, USER1);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Invalid proposal";
-    // Set deadline to 0 (definitely in the past) or advance clock after setting deadline
-    let proposal_deadline = now + 1000; // Set a future deadline first
-    // Then advance the clock past the deadline
-    clock::increment_for_testing(&mut clock, 2000);
+    // Set a deadline that's in the past (current time - 1000ms)
+    let proposal_deadline = clock::timestamp_ms(&clock) - 1000;
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
@@ -171,28 +197,37 @@ fun test_vote_on_proposal_success() {
         ctx,
     );
 
-    // User1 funds the project to get a pledge
+    // User1 funds the project to completion to get a pledge
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let payment = coin::mint_for_testing<SUI>(FUNDING_AMOUNT, ctx);
+    let payment = coin::mint_for_testing<SUI>(FUNDING_GOAL as u64, ctx); // Fund to goal
     project::deposit_funds(&mut project, payment, ctx, &clock);
     let project_id = project::get_id(&project);
     ts::return_shared(project);
 
-    // Create proposal
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
+    ts::return_shared(project);
+
+    // Create proposal (project is now ACTIVE)
     ts::next_tx(&mut scenario, USER2);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal to change project direction";
-    let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
+    let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
     );
+    ts::return_shared(project);
 
     // User1 votes on the proposal using their pledge
     ts::next_tx(&mut scenario, USER1);
@@ -250,31 +285,40 @@ fun test_vote_on_expired_proposal() {
         ctx,
     );
 
-    // User1 funds the project to get a pledge
+    // User1 funds the project to completion to get a pledge
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let payment = coin::mint_for_testing<SUI>(FUNDING_AMOUNT, ctx);
+    let payment = coin::mint_for_testing<SUI>(FUNDING_GOAL as u64, ctx); // Fund to goal
     project::deposit_funds(&mut project, payment, ctx, &clock);
     let project_id = project::get_id(&project);
     ts::return_shared(project);
 
-    // Create proposal with short deadline
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
+    ts::return_shared(project);
+
+    // Create proposal with valid deadline (1 day = minimum voting period)
     ts::next_tx(&mut scenario, USER2);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal to change project direction";
-    let proposal_deadline = now + 1000; // Very short deadline
+    let proposal_deadline = clock::timestamp_ms(&clock) + 24 * 60 * 60 * 1000; // 1 day from current time (minimum)
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
     );
+    ts::return_shared(project);
 
     // Advance clock past proposal deadline
-    clock::increment_for_testing(&mut clock, 2000);
+    clock::increment_for_testing(&mut clock, 25 * 60 * 60 * 1000); // Advance by 25 hours to expire proposal
 
     // Try to vote on expired proposal
     ts::next_tx(&mut scenario, USER1);
@@ -333,28 +377,37 @@ fun test_vote_twice_same_pledge() {
         ctx,
     );
 
-    // User1 funds the project to get a pledge
+    // User1 funds the project to completion to get a pledge
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let payment = coin::mint_for_testing<SUI>(FUNDING_AMOUNT, ctx);
+    let payment = coin::mint_for_testing<SUI>(FUNDING_GOAL as u64, ctx); // Fund to goal
     project::deposit_funds(&mut project, payment, ctx, &clock);
     let project_id = project::get_id(&project);
     ts::return_shared(project);
 
-    // Create proposal
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
+    ts::return_shared(project);
+
+    // Create proposal (project is now ACTIVE)
     ts::next_tx(&mut scenario, USER2);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal to change project direction";
-    let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
+    let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
     );
+    ts::return_shared(project);
 
     // User1 votes first time
     ts::next_tx(&mut scenario, USER1);
@@ -420,11 +473,11 @@ fun test_multiple_users_voting() {
         ctx,
     );
 
-    // User1 and User2 fund the project
+    // User1 and User2 fund the project to completion
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let payment1 = coin::mint_for_testing<SUI>(FUNDING_AMOUNT, ctx);
+    let payment1 = coin::mint_for_testing<SUI>(500_000_000_000, ctx); // 500 SUI
     project::deposit_funds(&mut project, payment1, ctx, &clock);
     let project_id = project::get_id(&project);
     ts::return_shared(project);
@@ -432,23 +485,32 @@ fun test_multiple_users_voting() {
     ts::next_tx(&mut scenario, USER2);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let payment2 = coin::mint_for_testing<SUI>(FUNDING_AMOUNT, ctx);
+    let payment2 = coin::mint_for_testing<SUI>(500_000_000_000, ctx); // 500 SUI (total = 1000 SUI = goal)
     project::deposit_funds(&mut project, payment2, ctx, &clock);
     ts::return_shared(project);
 
-    // Create proposal
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
+    ts::return_shared(project);
+
+    // Create proposal (project is now ACTIVE)
     ts::next_tx(&mut scenario, USER3);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal to change project direction";
-    let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
+    let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
     );
+    ts::return_shared(project);
 
     // User1 votes YES
     ts::next_tx(&mut scenario, USER1);
@@ -523,18 +585,31 @@ fun test_execute_proposal_wrong_conditions() {
         ctx,
     );
 
+    // Fund the project to completion
     ts::next_tx(&mut scenario, USER1);
-    let project = ts::take_shared<Project>(&scenario);
-    let project_id = project::get_id(&project);
+    let mut project = ts::take_shared<Project>(&scenario);
+    let ctx = ts::ctx(&mut scenario);
+    let payment = coin::mint_for_testing<SUI>(FUNDING_GOAL as u64, ctx);
+    project::deposit_funds(&mut project, payment, ctx, &clock);
+    ts::return_shared(project);
 
-    // Create proposal
+    // Advance time past funding deadline and finish funding
+    clock::increment_for_testing(&mut clock, 8 * 24 * 60 * 60 * 1000);
+    ts::next_tx(&mut scenario, ADMIN);
+    let mut project = ts::take_shared<Project>(&scenario);
+    project::finish_funding(&mut project, &clock);
+    ts::return_shared(project);
+
+    // Create proposal (project is now ACTIVE)
+    ts::next_tx(&mut scenario, USER1);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal to execute";
-    let proposal_deadline = now + 2 * 24 * 60 * 60 * 1000;
+    let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
@@ -548,7 +623,12 @@ fun test_execute_proposal_wrong_conditions() {
     let mut proposal = ts::take_shared<Proposal>(&scenario);
     let ctx = ts::ctx(&mut scenario);
 
-    proposal::execute_proposal(ctx, &mut proposal, &clock);
+    // Need to get project again for execute_proposal
+    ts::next_tx(&mut scenario, USER1);
+    let mut project = ts::take_shared<Project>(&scenario);
+    let ctx = ts::ctx(&mut scenario);
+    proposal::execute_proposal(ctx, &mut proposal, &mut project, &clock);
+    ts::return_shared(project);
 
     ts::return_shared(proposal);
     clock::destroy_for_testing(clock);

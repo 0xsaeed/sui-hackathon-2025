@@ -10,7 +10,7 @@ use sui::event;
 use sui::sui::SUI;
 use sui::url::{Self, Url};
 
-//  constants
+//  ########################### constants ######
 const EOnlyCreator: u64 = 1;
 const EOnlyAdmin: u64 = 2;
 const EProjectNotActive: u64 = 3;
@@ -23,7 +23,9 @@ const EMilestoneAlreadyClaimed: u64 = 9;
 const EMilestoneDeadlineNotReached: u64 = 10;
 const EMilestoneInvalidPercentage: u64 = 11;
 const EMilestoneInvalidData: u64 = 12;
+const EProjectNotFailed: u64 = 13;
 
+// ###################### structs ##########################
 public struct Project has key {
     id: UID,
     creator: address,
@@ -33,8 +35,8 @@ public struct Project has key {
     link: Url,
     funding_start: u64,
     funding_deadline: u64,
-    funding_goal: u128,
-    total_raised: u128, // total contributed (MIST)
+    funding_goal: u64,
+    total_raised: u64, // total contributed (MIST)
     total_withdrawn_percentage: u8, // total withdrawn by creator (%)
     close_on_funding_goal: bool, // auto-close funding when goal is reached
     milestones: vector<Milestone>, // must sum to 100
@@ -43,7 +45,7 @@ public struct Project has key {
     vault: Balance<SUI>, // escrow storage
 }
 
-public struct Milestone has store {
+public struct Milestone has copy, store {
     title: String,
     deadline: u64,
     is_claimed: bool,
@@ -59,7 +61,47 @@ public struct Pledge has key, store {
     image_url: Url,
 }
 
-// ########################################################### Public Functions ##################################
+// ####################### Events #####################
+
+public struct ProjectCreatedEvent has copy, drop {
+    project_id: ID,
+    creator: address,
+    title: String,
+    description: String,
+    image_url: Url,
+    link: Url,
+    funding_start: u64,
+    funding_deadline: u64,
+    funding_goal: u64,
+    close_on_funding_goal: bool,
+    // milestones: vector<Milestone>, // cannot emit complex types
+}
+
+public struct ProjectFundedEvent has copy, drop {
+    project_id: ID,
+    amount: u64,
+}
+
+public struct ProjectRefundedEvent has copy, drop {
+    project_id: ID,
+    pledge_id: ID,
+    backer: address,
+    amount: u64,
+}
+
+public struct ProjectStatusChangedEvent has copy, drop {
+    project_id: ID,
+    new_status: u8,
+}
+
+public struct MilestoneClaimedEvent has copy, drop {
+    project_id: ID,
+    milestone_index: u8,
+    title: String,
+    release_percentage: u8,
+    amount_released: u64,
+}
+// ############################### Public Functions ##################################
 
 /// Create a new project and SHARE it.
 public fun create_project(
@@ -68,7 +110,7 @@ public fun create_project(
     image_url: Url,
     link: Url,
     funding_deadline: u64,
-    funding_goal: u128,
+    funding_goal: u64,
     close_on_funding_goal: bool,
     milestone_titles: vector<String>,
     milestone_deadlines: vector<u64>,
@@ -111,7 +153,7 @@ public fun create_project(
         funding_start: now,
         funding_deadline,
         funding_goal,
-        total_raised: 0u128,
+        total_raised: 0u64,
         total_withdrawn_percentage: 0u8,
         close_on_funding_goal,
         milestones,
@@ -124,36 +166,21 @@ public fun create_project(
     transfer::share_object(project);
 }
 
-// fun new_milestone(
-//     title: String,
-//     deadline: u64,
-//     release_percentage: u8,
-//     ctx: &mut TxContext,
-// ): Milestone {
-//     assert!(release_percentage > 0 && release_percentage <= 100, EMilestoneInvalidPercentage);
-//     Milestone {
-//         title,
-//         deadline,
-//         is_claimed: false,
-//         release_percentage,
-//     }
-// }
-
 public fun finish_funding(project: &mut Project, clk: &Clock) {
     let now = sui::clock::timestamp_ms(clk);
     if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
         // Successful funding
         project.status = config::status_active();
-        ()
-    };
-    assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
-    if (project.total_raised >= project.funding_goal) {
-        // Successful funding
-        project.status = 2; // active
     } else {
-        // Failed funding
-        project.status = config::status_failed();
-    }
+        assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
+        if (project.total_raised >= project.funding_goal) {
+            // Successful funding
+            project.status = 2; // active
+        } else {
+            // Failed funding
+            project.status = config::status_failed();
+        }
+    };
 }
 
 public fun deposit_funds(
@@ -165,9 +192,9 @@ public fun deposit_funds(
     assert!(project.status == config::status_funding(), EProjectNotActive);
     let now = sui::clock::timestamp_ms(clk);
     assert!(now < project.funding_deadline, EFundingAlreadyEnded);
-    let amount = payment.value();
+    let amount = payment.value() as u64;
     project.vault.join(payment.into_balance());
-    project.total_raised = project.total_raised + (amount as u128);
+    project.total_raised = project.total_raised + (amount as u64);
 
     let pledge = Pledge {
         id: object::new(ctx),
@@ -181,10 +208,56 @@ public fun deposit_funds(
     transfer::public_transfer(pledge, ctx.sender());
 }
 
-public fun refund(pledge: &Pledge): () {}
-
 public fun transfer_pledge(pledge: Pledge, recipient: address) {
     transfer::public_transfer(pledge, recipient);
+}
+
+public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): () {
+    assert!(
+        project.status == config::status_failed() || project.status == config::status_rejected(),
+        EProjectNotFailed,
+    );
+    let pledge_id = object::id(&pledge);
+    let backer = tx_context::sender(ctx);
+    let Pledge { id, project_id, amount, .. } = pledge;
+    let mut amount_to_refund = 0u64;
+    if (project.status != config::status_failed()) {
+        amount_to_refund = amount as u64;
+    } else {
+        amount_to_refund =
+            amount * (100u64-(project.total_withdrawn_percentage as u64)) / 100u64;
+    };
+
+    /// TODO: transfer refund
+    let refund_balance = project.vault.split(amount_to_refund as u64);
+
+    // turn it back into a Coin<SUI>
+    let refund_coin = refund_balance.into_coin(ctx);
+
+    // transfer refund to backer
+    transfer::public_transfer(refund_coin, backer);
+
+    // Emit refund event
+    let event = ProjectRefundedEvent {
+        project_id,
+        pledge_id,
+        backer,
+        amount,
+    };
+    // burn the pledge NFT
+    object::delete(id);
+    event::emit(event);
+}
+
+public fun claim_milestone(project: &mut Project, clk: &Clock, ctx: &mut TxContext) {
+    assert!(tx_context::sender(ctx) == project.creator, EOnlyCreator);
+    assert!(project.status == config::status_active(), EProjectNotActive);
+    // TODOOOOOOO
+
+    // If all milestones claimed, close the project
+    if (project.total_withdrawn_percentage == 100) {
+        project.status = config::status_closed();
+    };
 }
 
 // ######################################## View Functions ##################################
@@ -195,3 +268,18 @@ public fun get_title(project: &Project): String { project.title }
 public fun get_description(project: &Project): String { project.description }
 
 public fun get_image_url(project: &Project): Url { project.image_url }
+
+public fun get_status(project: &Project): u8 { project.status }
+
+// ######################################## Admin Functions ##################################
+public(package) fun set_status_voting(project: &mut Project) {
+    project.status = config::status_voting();
+}
+
+public(package) fun set_status_active(project: &mut Project) {
+    project.status = config::status_active();
+}
+
+public(package) fun set_status_rejected(project: &mut Project) {
+    project.status = config::status_rejected();
+}
