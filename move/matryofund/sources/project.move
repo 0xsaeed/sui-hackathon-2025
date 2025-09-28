@@ -237,20 +237,20 @@ public fun deposit_funds(
 }
 
 public fun finish_funding(project: &mut Project, clk: &Clock) {
+    assert!(project.status == config::status_funding(), EProjectNotActive);
     let now = sui::clock::timestamp_ms(clk);
-    if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
-        // Successful funding
-        project.status = config::status_active();
-    } else {
-        assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
+    if (now > project.funding_deadline) {
         if (project.total_raised >= project.funding_goal) {
-            // Successful funding
-            project.status = 2; // active
+            change_project_status(project, config::status_active());
         } else {
-            // Failed funding
-            project.status = config::status_failed();
-        }
+            change_project_status(project, config::status_failed());
+        };
+    } else{
+        if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
+            change_project_status(project, config::status_active());
+        };
     };
+    
     let event = ProjectStatusChangedEvent {
         project_id: get_id(project),
         new_status: project.status,
