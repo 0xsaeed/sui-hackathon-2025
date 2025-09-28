@@ -62,7 +62,7 @@ public struct Pledge has key, store {
 // ########################################################### Public Functions ##################################
 
 /// Create a new project and SHARE it.
-public fun create_project(
+public entry fun create_project(
     title: String,
     description: String,
     image_url: Url,
