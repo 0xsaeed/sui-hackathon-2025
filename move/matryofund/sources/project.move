@@ -101,6 +101,12 @@ public struct MilestoneClaimedEvent has copy, drop {
     release_percentage: u8,
     amount_released: u64,
 }
+public struct PledgeTransferredEvent has copy, drop {
+    pledge_id: ID,
+    project_id: ID,
+    from: address,
+    to: address,
+}
 // ############################### Public Functions ##################################
 
 /// Create a new project and SHARE it.
@@ -145,7 +151,7 @@ public fun create_project(
 
     let project = Project {
         id: sui::object::new(ctx),
-        creator: tx_context::sender(ctx),
+        creator: ctx.sender(),
         title,
         description,
         image_url,
@@ -208,8 +214,15 @@ public fun deposit_funds(
     transfer::public_transfer(pledge, ctx.sender());
 }
 
-public fun transfer_pledge(pledge: Pledge, recipient: address) {
+public fun transfer_pledge(pledge: Pledge, recipient: address, ctx: &mut TxContext) {
+    let event = PledgeTransferredEvent {
+        pledge_id: object::id(&pledge),
+        project_id: pledge.project_id,
+        from: ctx.sender(),
+        to: recipient,
+    };
     transfer::public_transfer(pledge, recipient);
+    event::emit(event);
 }
 
 public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): () {
@@ -220,16 +233,14 @@ public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): (
     let pledge_id = object::id(&pledge);
     let backer = tx_context::sender(ctx);
     let Pledge { id, project_id, amount, .. } = pledge;
-    let mut amount_to_refund = 0u64;
-    if (project.status != config::status_failed()) {
-        amount_to_refund = amount as u64;
+    
+    let amount_to_refund = if (project.status != config::status_failed()) {
+        amount as u64
     } else {
-        amount_to_refund =
-            amount * (100u64-(project.total_withdrawn_percentage as u64)) / 100u64;
+        amount * (100u64-(project.total_withdrawn_percentage as u64)) / 100u64
     };
 
-    /// TODO: transfer refund
-    let refund_balance = project.vault.split(amount_to_refund as u64);
+    let refund_balance = project.vault.split(amount_to_refund);
 
     // turn it back into a Coin<SUI>
     let refund_coin = refund_balance.into_coin(ctx);
@@ -244,13 +255,14 @@ public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): (
         backer,
         amount,
     };
+
     // burn the pledge NFT
     object::delete(id);
     event::emit(event);
 }
 
 public fun claim_milestone(project: &mut Project, clk: &Clock, ctx: &mut TxContext) {
-    assert!(tx_context::sender(ctx) == project.creator, EOnlyCreator);
+    assert!(ctx.sender() == project.creator, EOnlyCreator);
     assert!(project.status == config::status_active(), EProjectNotActive);
     // TODOOOOOOO
 
@@ -272,6 +284,7 @@ public fun get_image_url(project: &Project): Url { project.image_url }
 public fun get_status(project: &Project): u8 { project.status }
 
 // ######################################## Admin Functions ##################################
+
 public(package) fun set_status_voting(project: &mut Project) {
     project.status = config::status_voting();
 }

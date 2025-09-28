@@ -76,7 +76,7 @@ fun test_create_proposal_success() {
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal to change project direction";
+    let proposal_description = string::utf8(b"Proposal to change project direction");
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
@@ -147,14 +147,14 @@ fun test_create_proposal_deadline_in_past() {
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Invalid proposal";
+    let description = string::utf8(b"Invalid proposal");
     // Set a deadline that's in the past (current time - 1000ms)
     let proposal_deadline = clock::timestamp_ms(&clock) - 1000;
 
     proposal::create_and_share_proposal(
         ctx,
         &mut project,
-        proposal_description,
+        description,
         proposal_deadline,
         &clock,
     );
@@ -217,7 +217,7 @@ fun test_vote_on_proposal_success() {
     ts::next_tx(&mut scenario, USER2);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal to change project direction";
+    let proposal_description = string::utf8(b"Proposal to change project direction");
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
@@ -305,7 +305,7 @@ fun test_vote_on_expired_proposal() {
     ts::next_tx(&mut scenario, USER2);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal to change project direction";
+    let proposal_description = string::utf8(b"Proposal to change project direction");
     let proposal_deadline = clock::timestamp_ms(&clock) + 24 * 60 * 60 * 1000; // 1 day from current time (minimum)
 
     proposal::create_and_share_proposal(
@@ -397,13 +397,13 @@ fun test_vote_twice_same_pledge() {
     ts::next_tx(&mut scenario, USER2);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal to change project direction";
+    let description = string::utf8(b"Proposal to change project direction");
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
         &mut project,
-        proposal_description,
+        description,
         proposal_deadline,
         &clock,
     );
@@ -500,13 +500,13 @@ fun test_multiple_users_voting() {
     ts::next_tx(&mut scenario, USER3);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal to change project direction";
+    let description = string::utf8(b"Proposal to change project direction");
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
         &mut project,
-        proposal_description,
+        description,
         proposal_deadline,
         &clock,
     );
@@ -604,13 +604,13 @@ fun test_execute_proposal_wrong_conditions() {
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal to execute";
+    let description = string::utf8(b"Proposal to execute");
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000; // 2 days from current time
 
     proposal::create_and_share_proposal(
         ctx,
         &mut project,
-        proposal_description,
+        description,
         proposal_deadline,
         &clock,
     );
@@ -618,13 +618,21 @@ fun test_execute_proposal_wrong_conditions() {
 
     // Try to execute proposal - should fail due to assertion in execute_proposal
     // Note: The current implementation has assert!(proposal.executed, EProposalAlreadyExecuted)
-    // which seems to be inverted logic - it should probably be !proposal.executed
+ // Advance time past proposal deadline to make it executable
+    clock::increment_for_testing(&mut clock, 3 * 24 * 60 * 60 * 1000); // Advance by 3 days
+
+    // Execute proposal first time (should succeed)
     ts::next_tx(&mut scenario, USER1);
     let mut proposal = ts::take_shared<Proposal>(&scenario);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
+    proposal::execute_proposal(ctx, &mut proposal, &mut project, &clock);
+    ts::return_shared(project);
+    ts::return_shared(proposal);
 
-    // Need to get project again for execute_proposal
+    // Try to execute proposal again - should fail with EProposalAlreadyExecuted
     ts::next_tx(&mut scenario, USER1);
+    let mut proposal = ts::take_shared<Proposal>(&scenario);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     proposal::execute_proposal(ctx, &mut proposal, &mut project, &clock);
