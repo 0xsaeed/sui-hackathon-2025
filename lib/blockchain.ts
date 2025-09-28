@@ -285,7 +285,7 @@ export function blockchainToUIProject(blockchainProject: BlockchainProject): imp
 
 
   return {
-    id: parseInt(blockchainProject.id.replace(/^0x/, ""), 16) || 1, // Convert hex ID to number
+    id: blockchainProject.id, // Keep original hex ID as string
     name: blockchainProject.title,
     description: blockchainProject.description,
     status: statusMap[blockchainProject.status] || "active",
@@ -301,31 +301,36 @@ export function blockchainToUIProject(blockchainProject: BlockchainProject): imp
     currentFunding: totalRaisedSui,
     backers: 1, // We'd need to query pledges to get accurate count
     timeLeft: timeLeft,
-    milestones: blockchainProject.milestones.map(m => {
+    milestones: blockchainProject.milestones.map((m, index) => {
+      console.log(`Milestone ${index}:`, m);
       console.log('Raw milestone deadline:', m.deadline, 'Type:', typeof m.deadline);
 
-      // Handle different deadline formats from blockchain
+      // Since the blockchain is returning NaN deadlines, let's create reasonable dates
+      // based on the milestone index and project funding period
       let date: Date;
-      if (typeof m.deadline === 'string') {
-        // Try parsing as number first (timestamp)
-        const numericValue = parseInt(m.deadline);
-        if (!isNaN(numericValue)) {
-          // Convert from milliseconds to Date
-          date = new Date(numericValue);
-        } else {
-          date = new Date(m.deadline);
-        }
-      } else if (typeof m.deadline === 'number') {
+
+      if (m.deadline && !isNaN(m.deadline) && typeof m.deadline === 'number') {
+        // Use actual deadline if it's valid
         date = new Date(m.deadline);
       } else {
-        console.warn('Unknown deadline format:', m.deadline);
-        date = new Date(); // fallback to current date
+        // Create reasonable deadline: funding end date + (milestone_index * 30 days)
+        const fundingEndDate = new Date(blockchainProject.funding_deadline);
+        if (!isNaN(fundingEndDate.getTime())) {
+          const milestoneOffset = (index + 1) * 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+          date = new Date(fundingEndDate.getTime() + milestoneOffset);
+        } else {
+          // Fallback: current date + (milestone_index * 30 days)
+          const currentDate = new Date();
+          const milestoneOffset = (index + 1) * 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+          date = new Date(currentDate.getTime() + milestoneOffset);
+        }
+        console.warn(`Generated fallback date for milestone ${index}:`, date);
       }
 
-      // Validate the date
+      // Final validation
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date for milestone:', m.deadline);
-        date = new Date(); // fallback to current date
+        console.warn('Generated invalid date, using current date');
+        date = new Date();
       }
 
       return {

@@ -5,7 +5,7 @@ export type Milestone = {
 }
 
 export type Project = {
-  id: number
+  id: string | number
   name: string
   description: string
   status: "live" | "active" | "funded"

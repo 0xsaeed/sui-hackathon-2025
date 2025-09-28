@@ -168,7 +168,7 @@ export default function ProjectsPage() {
             <p>Total projects loaded: {projects.length}</p>
             <p>Projects showing: {sorted.length}</p>
             <p>Loading: {loading ? 'Yes' : 'No'}</p>
-            <p>Data source: {projects.length > 0 && projects[0].id > 10000 ? 'Blockchain' : 'Seed Data'}</p>
+            <p>Data source: {projects.length > 0 && typeof projects[0].id === 'string' ? 'Blockchain' : 'Seed Data'}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
