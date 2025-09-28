@@ -361,6 +361,8 @@ public fun get_image_url(project: &Project): Url { project.image_url }
 
 public fun get_status(project: &Project): u8 { project.status }
 
+public fun get_total_raised(project: &Project): u64 { project.total_raised }
+
 public fun get_pledge_project_id(pledge: &Pledge): ID {
     pledge.project_id
 }

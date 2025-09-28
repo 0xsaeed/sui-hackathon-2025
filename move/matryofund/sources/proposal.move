@@ -116,16 +116,29 @@ public fun execute_proposal(
 
     // Check if proposal passed (you can adjust the logic based on your requirements)
     let total_votes = proposal.yes_votes + proposal.no_votes;
-
-    if (proposal.yes_votes >= proposal.no_votes) {
-        // Proposal passed - logic to transfer funds to the project owner would go here
+    let total_raised = project::get_total_raised(project);
+    let current_quorum =((total_votes * 100) / total_raised);
+    if (current_quorum < config::minimum_quorum()) {
+        // Not enough quorum - reject proposal but keep project active
         project::change_project_status(project, config::status_active());
     } else {
-        // Proposal rejected
-        project::change_project_status(project, config::status_rejected());
+        if (proposal.yes_votes >= proposal.no_votes) {
+            // Proposal passed - logic to transfer funds to the project owner would go here
+            project::change_project_status(project, config::status_active());
+        } else {
+            // Proposal rejected
+            project::change_project_status(project, config::status_rejected());
+        };
     };
-
     proposal.executed = true;
+    let event = ProposalExecutedEvent {
+        proposal_id: object::id(proposal),
+        project_id: proposal.project_id,
+        executed: proposal.executed,
+        yes_votes: proposal.yes_votes,
+        no_votes: proposal.no_votes,
+    };
+    event::emit(event);
 }
 
 public fun vote_on_proposal(
