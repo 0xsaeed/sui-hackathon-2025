@@ -24,6 +24,9 @@ export default function AboutPage() {
           <p className="text-lg text-muted-foreground italic">
             (Matryoshka + Funding)
           </p>
+          <p className="text-lg text-muted-foreground italic">
+            Team Members: Soodoo, Mostafa, Moein
+          </p>
         </div>
 
         {/* Overview Section */}
