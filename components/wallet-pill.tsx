@@ -26,7 +26,7 @@ export function WalletPill({ className = "" }: { className?: string }) {
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           sideOffset={8}
-          className="z-50 rounded-md border border-border/60 bg-background p-1 shadow-md"
+          className="z-50 rounded-md border border-border/60 bg-black px-5 py-2 shadow-md"
         >
           <DropdownMenu.Item
             className="cursor-pointer select-none rounded-sm px-3 py-2 text-sm hover:bg-muted focus:bg-muted outline-none"

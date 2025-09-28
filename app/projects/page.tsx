@@ -191,7 +191,7 @@ export default function ProjectsPage() {
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className="bg-transparent border rounded-md px-2 py-1 text-sm"
+                className="bg-transparent border rounded-md px-3 py-2 text-sm"
               >
                 <option value="trending">Trending</option>
                 <option value="newest">Newest</option>

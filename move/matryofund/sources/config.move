@@ -2,13 +2,16 @@
 
 module matryofund::config;
 
+// Matryofund Constants
 const COMMISSION_FEE_RATE: u8 = 1; // 1% fee on profits
 const COMMISSION_FEE_BENEFICIARY: address = @0x100; // Address to receive commission fees
+// Proposal constants
 const VOTING_PERIOD: u64 = 2 * 24 * 60 * 60; // 2 days in seconds
 const VOTING_PERIOD_EXTEND: u64 = 24 * 60 * 60; // 1 day extension if a vote is cast near the end of the voting period
 const MINIMUM_QUORUM: u64 = 1; // minimum number of votes required for a proposal to be valid
 const MINIMUM_ACCEPTANCE_RATE: u8 = 51; // minimum percentage for a proposal to be accepted
-
+const MAX_VOTING_PERIOD: u64 = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const MIN_VOTING_PERIOD: u64 = 24 * 60 * 60 * 1000; // 1 hour in milliseconds
 // Project statuses
 const STATUS_FUNDING: u8 = 0; // funding status
 const STATUS_FAILED: u8 = 1; // failed status
@@ -28,6 +31,10 @@ public fun voting_period_extend(): u64 { VOTING_PERIOD_EXTEND }
 public fun minimum_quorum(): u64 { MINIMUM_QUORUM }
 
 public fun minimum_acceptance_rate(): u8 { MINIMUM_ACCEPTANCE_RATE }
+
+public fun max_voting_period(): u64 { MAX_VOTING_PERIOD }
+
+public fun min_voting_period(): u64 { MIN_VOTING_PERIOD }
 
 public fun status_funding(): u8 { STATUS_FUNDING }
 

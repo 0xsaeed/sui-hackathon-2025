@@ -1,16 +1,44 @@
 .PHONY: build test deploy help
 
+ssh:
+	eval $$(ssh-agent)
+	ssh-add
+
+clear:
+	clear
 # Build the Move project
-build:
+build:clear
 	sui move build
 
 # Run Move tests
-test:
+test:clear
 	sui move test
 
 # Deploy the Move package to the Sui network
-deploy:
+deploy:clear
 	sui client publish --gas-budget 200000000
+
+merge_dev:
+	git checkout move
+	git pull
+	git checkout dev
+	git pull
+	git merge move
+	git push
+	git checkout move
+
+merge_main:
+	git checkout move
+	git pull
+	git checkout dev
+	git pull
+	git merge move
+	git push
+	git checkout main
+	git pull
+	git merge dev
+	git push
+	git checkout move
 
 # Display help information
 help:
