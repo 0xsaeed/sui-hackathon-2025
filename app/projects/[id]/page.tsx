@@ -27,7 +27,6 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle className="text-2xl">{project.name}</CardTitle>
-              <Badge variant="outline">{project.category}</Badge>
               <Badge className="capitalize">{project.status}</Badge>
             </div>
             <CardDescription>{project.description}</CardDescription>
@@ -67,7 +66,7 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold mb-2">About this project</h3>
                   <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
-                    {project.longDescription || project.description}
+                    {project.description}
                   </p>
                 </div>
                 {project.milestones?.length ? (

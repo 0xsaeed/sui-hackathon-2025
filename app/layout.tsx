@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SuiProviders } from "@/components/providers/sui";
 import "@mysten/dapp-kit/dist/index.css";
 import { WalletCookieSync } from "@/components/wallet-cookie";
+import { Toaster } from "sonner";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -35,6 +36,7 @@ export default function RootLayout({
           >
             <WalletCookieSync />
             {children}
+            <Toaster />
           </ThemeProvider>
         </SuiProviders>
       </body>

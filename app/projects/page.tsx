@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Folder, Users, Calendar, Clock, TrendingUp, Search, ArrowUpDown } from "lucide-react"
+import { Folder, Users, Calendar, Clock, TrendingUp, Search, ArrowUpDown, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import React from "react"
-import { DEFAULT_CATEGORIES, SEED_PROJECTS, type Project, getProjectsClient, percentFunded, sortProjects, type SortKey } from "@/lib/projects"
+import { SEED_PROJECTS, type Project, getProjectsClient, percentFunded, sortProjects, type SortKey } from "@/lib/projects"
+import { useSuiClient } from "@mysten/dapp-kit"
+import { getProjectsFromBlockchain, blockchainToUIProject } from "@/lib/blockchain"
 
 const getStatusColor = (status: Project["status"]) => {
   switch (status) {
@@ -25,18 +27,47 @@ const getStatusColor = (status: Project["status"]) => {
 
 export default function ProjectsPage() {
   const [query, setQuery] = React.useState("")
-  const [activeCategory, setActiveCategory] = React.useState<(typeof DEFAULT_CATEGORIES)[number]>("All")
   const [sortKey, setSortKey] = React.useState<SortKey>("trending")
   const [projects, setProjects] = React.useState<Project[]>(SEED_PROJECTS)
+  const [loading, setLoading] = React.useState(false)
+  const suiClient = useSuiClient()
+
+  const loadProjects = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      // Try to load from blockchain first
+      const blockchainProjects = await getProjectsFromBlockchain(suiClient)
+      if (blockchainProjects.length > 0) {
+        const uiProjects = blockchainProjects.map(blockchainToUIProject)
+        setProjects(uiProjects)
+        console.log('Loaded', uiProjects.length, 'projects from blockchain')
+      } else {
+        // Fallback to seed data
+        console.log('No blockchain projects found, using seed data')
+        setProjects(SEED_PROJECTS)
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error)
+      // Fallback to seed data on error
+      setProjects(SEED_PROJECTS)
+    } finally {
+      setLoading(false)
+    }
+  }, [suiClient])
 
   React.useEffect(() => {
-    getProjectsClient().then(setProjects).catch(() => setProjects(SEED_PROJECTS))
-  }, [])
+    loadProjects()
+  }, [loadProjects])
+
+  // Auto-refresh every 30 seconds to catch new projects
+  React.useEffect(() => {
+    const interval = setInterval(loadProjects, 30000)
+    return () => clearInterval(interval)
+  }, [loadProjects])
 
   const filtered = projects.filter((p) => {
-    const matchesQuery = [p.name, p.description, p.category].join(" ").toLowerCase().includes(query.toLowerCase())
-    const matchesCategory = activeCategory === "All" || p.category === activeCategory
-    return matchesQuery && matchesCategory
+    const matchesQuery = [p.name, p.description].join(" ").toLowerCase().includes(query.toLowerCase())
+    return matchesQuery
   })
 
   const sorted = sortProjects(filtered, sortKey)
@@ -67,6 +98,16 @@ export default function ProjectsPage() {
               />
               <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/60" />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadProjects}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Loading...' : 'Refresh'}
+            </Button>
             <div className="flex items-center gap-2">
               <ArrowUpDown className="size-4 text-foreground/60" />
               <select
@@ -82,19 +123,6 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {DEFAULT_CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setActiveCategory(c)}
-              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                activeCategory === c ? "bg-primary text-black border-primary" : "bg-transparent hover:bg-white/5 border-border"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
 
         <div className="grid grid-cols-1 gap-4 mt-8 md:grid-cols-2 lg:grid-cols-4">
           <Card className="@container/card">
@@ -134,6 +162,15 @@ export default function ProjectsPage() {
         </div>
 
         <div id="projects" className="mt-10">
+          {/* Debug info */}
+          <div className="mb-4 p-4 bg-muted/50 rounded-lg text-sm">
+            <p><strong>Debug Info:</strong></p>
+            <p>Total projects loaded: {projects.length}</p>
+            <p>Projects showing: {sorted.length}</p>
+            <p>Loading: {loading ? 'Yes' : 'No'}</p>
+            <p>Data source: {projects.length > 0 && projects[0].id > 10000 ? 'Blockchain' : 'Seed Data'}</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {sorted.map((project) => {
               const pct = percentFunded(project)
@@ -143,7 +180,6 @@ export default function ProjectsPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-semibold">{project.name}</h3>
                       <Badge className={`text-xs ${getStatusColor(project.status)}`}>{project.status}</Badge>
-                      <Badge variant="outline" className="text-xs">{project.category}</Badge>
                     </div>
                     <CardDescription className="mt-1">{project.description}</CardDescription>
                   </CardHeader>
@@ -182,7 +218,15 @@ export default function ProjectsPage() {
                       <span>•</span>
                       <span className="inline-flex items-center gap-1"><Clock className="size-3" /> {project.timeLeft}</span>
                     </div>
-                    <Button size="sm" variant="secondary" asChild>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        console.log('Navigating to project:', project.id, project.name)
+                        console.log('Project data:', project)
+                      }}
+                      asChild
+                    >
                       <Link href={`/projects/${project.id}`}>View Project</Link>
                     </Button>
                   </CardFooter>
