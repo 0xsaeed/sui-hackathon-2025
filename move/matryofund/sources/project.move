@@ -233,14 +233,14 @@ public fun refund(pledge: Pledge, project: &mut Project, ctx: &mut TxContext): (
     let pledge_id = object::id(&pledge);
     let backer = tx_context::sender(ctx);
     let Pledge { id, project_id, amount, .. } = pledge;
-    let mut amount_to_refund = 0u64;
-    if (project.status != config::status_failed()) {
-        amount_to_refund = amount as u64;
+    
+    let amount_to_refund = if (project.status != config::status_failed()) {
+        amount as u64
     } else {
-        amount_to_refund = amount * (100u64-(project.total_withdrawn_percentage as u64)) / 100u64;
+        amount * (100u64-(project.total_withdrawn_percentage as u64)) / 100u64
     };
 
-    let refund_balance = project.vault.split(amount_to_refund as u64);
+    let refund_balance = project.vault.split(amount_to_refund);
 
     // turn it back into a Coin<SUI>
     let refund_coin = refund_balance.into_coin(ctx);

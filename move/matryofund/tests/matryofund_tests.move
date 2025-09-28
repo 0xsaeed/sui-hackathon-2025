@@ -334,6 +334,7 @@ fun test_integration_pledge_transfer() {
     // USER1 transfers pledge to USER2
     ts::next_tx(&mut scenario, USER1);
     let pledge = ts::take_from_sender<Pledge>(&scenario);
+    let ctx = ts::ctx(&mut scenario);
     project::transfer_pledge(pledge, USER2, ctx);
 
     // Verify USER2 now has the pledge
