@@ -168,7 +168,7 @@ fun test_integration_full_crowdfunding_cycle() {
     ts::next_tx(&mut scenario, USER1);
     let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
-    let proposal_description = b"Proposal for project modification";
+    let proposal_description = string::utf8(b"Proposal for project modification");
     // Set deadline to 2 days from current time (well within 7-day max limit)
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000;
 
@@ -334,7 +334,7 @@ fun test_integration_pledge_transfer() {
     // USER1 transfers pledge to USER2
     ts::next_tx(&mut scenario, USER1);
     let pledge = ts::take_from_sender<Pledge>(&scenario);
-    project::transfer_pledge(pledge, USER2);
+    project::transfer_pledge(pledge, USER2, ctx);
 
     // Verify USER2 now has the pledge
     ts::next_tx(&mut scenario, USER2);

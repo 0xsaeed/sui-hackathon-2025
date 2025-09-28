@@ -362,7 +362,7 @@ fun test_transfer_pledge() {
     // User1 transfers pledge to User2
     ts::next_tx(&mut scenario, USER1);
     let pledge = ts::take_from_sender<Pledge>(&scenario);
-    project::transfer_pledge(pledge, USER2);
+    project::transfer_pledge(pledge, USER2, ctx);
 
     // Verify User2 now has the pledge
     ts::next_tx(&mut scenario, USER2);

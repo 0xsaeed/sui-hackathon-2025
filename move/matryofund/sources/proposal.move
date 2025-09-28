@@ -148,7 +148,7 @@ public fun vote_on_proposal(
 public fun create_and_share_proposal(
     ctx: &mut TxContext,
     project: &mut Project,
-    description: vector<u8>,
+    description: String,
     deadline: u64,
     clk: &Clock,
 ) {
