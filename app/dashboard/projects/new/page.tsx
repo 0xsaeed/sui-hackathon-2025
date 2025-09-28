@@ -61,16 +61,39 @@ export default function NewProjectPage() {
   const [mPercent, setMPercent] = React.useState<number | "">("");
   const [mDate, setMDate] = React.useState("");
 
+  // Calculate milestone percentage validation
+  const totalPercent = milestones.reduce((sum, m) => sum + m.percent, 0);
+  const remainingPercent = 100 - totalPercent;
+  const isPercentageValid = totalPercent === 100;
+
   function addMilestone() {
-    if (!mTitle || mPercent === "" || mPercent < 0 || mPercent > 100 || !mDate)
+    if (!mTitle || mPercent === "" || mPercent < 0 || mPercent > 100 || !mDate) {
+      toast.error("Please fill all milestone fields with valid data");
       return;
+    }
+
+    const newPercent = Number(mPercent);
+    const newTotal = totalPercent + newPercent;
+
+    if (newTotal > 100) {
+      toast.error(`Adding ${newPercent}% would exceed 100% (current: ${totalPercent}%)`);
+      return;
+    }
+
+    const endDate = new Date(mDate);
+    if (endDate <= new Date()) {
+      toast.error("Milestone end date must be in the future");
+      return;
+    }
+
     setMilestones((arr) => [
       ...arr,
-      { title: mTitle, percent: Number(mPercent), endDate: mDate },
+      { title: mTitle, percent: newPercent, endDate: mDate },
     ]);
     setMTitle("");
     setMPercent("");
     setMDate("");
+    toast.success(`Milestone added! ${100 - newTotal}% remaining`);
   }
 
   async function handleSubmit(formData: FormData) {
@@ -115,6 +138,9 @@ export default function NewProjectPage() {
       );
 
       console.log("📩 Result from handleProjectCreation:", result);
+      console.log("🔍 Result success status:", result.success);
+      console.log("🔍 Result error:", result.error);
+      console.log("🔍 Result transaction hash:", result.transactionHash);
 
       if (result.success) {
         toast.success(
@@ -199,21 +225,12 @@ export default function NewProjectPage() {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">Short Description</Label>
+                  <Label htmlFor="description">Project Description</Label>
                   <Textarea
                     id="description"
                     name="description"
-                    rows={3}
-                    placeholder="One-line summary of your project"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="longDescription">Long Description</Label>
-                  <Textarea
-                    id="longDescription"
-                    name="longDescription"
-                    rows={6}
-                    placeholder="Tell backers what you’re building, your roadmap, and how funds will be used."
+                    rows={5}
+                    placeholder="Tell backers what you're building, your roadmap, and how funds will be used."
                   />
                 </div>
 
@@ -239,9 +256,26 @@ export default function NewProjectPage() {
                 <div className="md:col-span-2">
                   <div className="flex items-center justify-between mb-2">
                     <Label>Milestones</Label>
-                    <span className="text-xs text-foreground/60">
-                      Add one milestone at a time
-                    </span>
+                    <div className="text-xs">
+                      <span className="text-foreground/60">
+                        Total: {totalPercent}%
+                      </span>
+                      {remainingPercent > 0 && (
+                        <span className="text-orange-500 ml-2">
+                          (Need {remainingPercent}% more)
+                        </span>
+                      )}
+                      {remainingPercent < 0 && (
+                        <span className="text-red-500 ml-2">
+                          ({Math.abs(remainingPercent)}% over limit)
+                        </span>
+                      )}
+                      {isPercentageValid && (
+                        <span className="text-green-500 ml-2">
+                          ✓ Complete
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="space-y-2">
@@ -358,7 +392,10 @@ export default function NewProjectPage() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={submitting}>
+                  <Button
+                    type="submit"
+                    disabled={submitting || !isPercentageValid || milestones.length === 0}
+                  >
                     {submitting ? "Creating…" : "Create Project"}
                   </Button>
                 </div>

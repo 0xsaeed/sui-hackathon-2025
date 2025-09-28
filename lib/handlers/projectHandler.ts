@@ -32,13 +32,19 @@ export async function handleProjectCreation(
     console.log("🔥 handleProjectCreation called");
 
     // ✅ Build project data from form
+    // Calculate funding deadline from "Time Left" field (assuming days)
+    const timeLeftStr = formData.get("timeLeft") as string;
+    const timeLeftDays = timeLeftStr ? parseInt(timeLeftStr) : 30; // default 30 days
+    const fundingDeadline = new Date();
+    fundingDeadline.setDate(fundingDeadline.getDate() + timeLeftDays);
+
     const projectData: ProjectFormData = {
       name: formData.get("name") as string,
-      description: formData.get("description") as string,
+      description: formData.get("description") as string, // Use single description field
       imageUrl: formData.get("imageUrl") as string,
       projectLink: formData.get("projectLink") as string,
       fundingGoal: formData.get("fundingGoal") as string,
-      fundingDeadline: formData.get("fundingDeadline") as string,
+      fundingDeadline: fundingDeadline.toISOString().split('T')[0], // YYYY-MM-DD format
       closeOnFundingGoal: formData.get("closeOnFundingGoal") === "on",
       milestones,
     };
