@@ -144,16 +144,16 @@ public fun finish_funding(project: &mut Project, clk: &Clock) {
     if (project.close_on_funding_goal && project.total_raised >= project.funding_goal) {
         // Successful funding
         project.status = config::status_active();
-        ()
-    };
-    assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
-    if (project.total_raised >= project.funding_goal) {
-        // Successful funding
-        project.status = 2; // active
     } else {
-        // Failed funding
-        project.status = config::status_failed();
-    }
+        assert!(now >= project.funding_deadline, EFundingDeadlineNotPassed);
+        if (project.total_raised >= project.funding_goal) {
+            // Successful funding
+            project.status = 2; // active
+        } else {
+            // Failed funding
+            project.status = config::status_failed();
+        }
+    };
 }
 
 public fun deposit_funds(
@@ -195,3 +195,18 @@ public fun get_title(project: &Project): String { project.title }
 public fun get_description(project: &Project): String { project.description }
 
 public fun get_image_url(project: &Project): Url { project.image_url }
+
+public fun get_status(project: &Project): u8 { project.status }
+
+// ######################################## Admin Functions ##################################
+public(package) fun set_status_voting(project: &mut Project) {
+    project.status = config::status_voting();
+}
+
+public(package) fun set_status_active(project: &mut Project) {
+    project.status = config::status_active();
+}
+
+public(package) fun set_status_rejected(project: &mut Project) {
+    project.status = config::status_rejected();
+}

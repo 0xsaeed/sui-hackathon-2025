@@ -146,7 +146,6 @@ fun test_integration_full_crowdfunding_cycle() {
     let ctx = ts::ctx(&mut scenario);
     let payment1 = coin::mint_for_testing<SUI>(400_000_000_000, ctx); // 400 SUI
     project::deposit_funds(&mut project, payment1, ctx, &clock);
-    let project_id = project::get_id(&project);
     ts::return_shared(project);
 
     ts::next_tx(&mut scenario, USER2);
@@ -167,17 +166,20 @@ fun test_integration_full_crowdfunding_cycle() {
 
     // Create a proposal for the funded project
     ts::next_tx(&mut scenario, USER1);
+    let mut project = ts::take_shared<Project>(&scenario);
     let ctx = ts::ctx(&mut scenario);
     let proposal_description = b"Proposal for project modification";
+    // Set deadline to 2 days from current time (well within 7-day max limit)
     let proposal_deadline = clock::timestamp_ms(&clock) + 2 * 24 * 60 * 60 * 1000;
 
     proposal::create_and_share_proposal(
         ctx,
-        project_id,
+        &mut project,
         proposal_description,
         proposal_deadline,
         &clock,
     );
+    ts::return_shared(project);
 
     // Users vote on the proposal
     ts::next_tx(&mut scenario, USER1);
